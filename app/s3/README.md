@@ -1,0 +1,2 @@
+## S3
+This folder is for all logic that is related to S3, for example, uploading and downloading files from S3. This can include things like S3 clients, S3 buckets, and other S3 related services that are used by the API layer.
