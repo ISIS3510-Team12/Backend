@@ -1,0 +1,2 @@
+## Services
+This folder is for all logic that is not directly related to the API layer, but is used by it. This can include things like database access, business logic, and other services that are used by the API layer.
