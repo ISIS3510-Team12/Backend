@@ -1,11 +1,12 @@
-import boto3
-from types_boto3_s3.service_resource import S3ServiceResource, BucketObjectsCollection, ServiceResourceBucketsCollection
-from types_boto3_s3.client import S3Client
+from __future__ import annotations
 from typing import final
 from botocore.exceptions import ClientError
 from dataclasses import dataclass
 from app.core.dependencies import s3_client, s3_resource
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from types_boto3_s3.service_resource import BucketObjectsCollection
 
 @dataclass
 class S3Object:

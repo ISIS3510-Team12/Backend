@@ -1,8 +1,12 @@
+from __future__ import annotations
 from app.core.config import settings
-from types_boto3_s3.client import S3Client
-from types_boto3_s3.service_resource import S3ServiceResource
 import boto3
 from functools import lru_cache
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types_boto3_s3.service_resource import S3ServiceResource
+    from types_boto3_s3.client import S3Client
 
 @lru_cache
 def get_s3_client() -> S3Client:
