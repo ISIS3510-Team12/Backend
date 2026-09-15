@@ -2,13 +2,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 from functools import lru_cache
 from pydantic import BaseModel
+import os
 
 Environment = Literal["dev", "prod"]
 
-class EnvironmentConfig(BaseModel):
-    env: Environment
-
 class CoreSettings(BaseSettings):
+    ENV: Environment = "dev"
     POSTGRES_HOST: str = ""
     POSTGRES_PASSWORD: str = ""
     POSTGRES_USER: str = ""
@@ -34,28 +33,31 @@ class CoreSettings(BaseSettings):
 
 
 class DevSettings(CoreSettings):
-    ENV: str = "dev"
+    ENV: Environment = "dev"
 
     model_config = SettingsConfigDict(
         env_file=".env.dev",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
 
 class ProdSettings(CoreSettings):
-    ENV: str = "prod"
+    ENV: Environment = "prod"
 
     model_config = SettingsConfigDict(
-        env_file=".env.prod",
+        extra="ignore",
     )
 
 
 @lru_cache
-def get_settings(env: Environment) -> CoreSettings:
-    config = EnvironmentConfig(env=env)
+def get_settings() -> CoreSettings:
+    env = os.getenv("ENV", "dev")
 
-    if config.env == "dev":
-        return DevSettings()
+    if env == "prod":
+        return ProdSettings()
 
-    return ProdSettings()
+    return DevSettings()
 
-settings = get_settings(env="dev")
+
+settings = get_settings()
