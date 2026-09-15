@@ -1,10 +1,12 @@
 from fastapi import Depends, FastAPI
 from sqlmodel import Session, text
+from app.routers.s3.router import router as s3_router
 
 from app.db import get_db
 
 app = FastAPI(title="Back-end")
 
+app.include_router(s3_router)
 
 @app.get("/")
 def root() -> dict:
