@@ -1,10 +1,8 @@
 services:
   db:
     image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+    env_file:
+      - .env.dev
     ports:
       - "5432:5432"
     volumes:
@@ -14,31 +12,32 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    
 
   s3:
-    image: minio/minio
+    image: eniz1806/vaults3:latest
+    env_file:
+      - .env.dev
     ports:
       - "9000:9000"
-      - "9001:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      VAULTS3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      VAULTS3_SECRET_KEY: ${S3_SECRET_KEY}
     volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
+      - vaults3_data:/data
+      - vaults3_meta:/metadata
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
-      timeout: 10s
-      retries: 3
 
   backend:
     build: .
+    env_file:
+      - .env.dev
     ports:
       - "8000:8000"
-    environment:
-      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/postgres
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
     depends_on:
       db:
         condition: service_healthy
@@ -47,4 +46,5 @@ services:
 
 volumes:
   pgdata:
-  minio_data:
+  vaults3_data:
+  vaults3_meta:
