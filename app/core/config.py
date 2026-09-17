@@ -1,29 +1,32 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Literal
+from abc import abstractmethod
+from typing import Literal, override
 from functools import lru_cache
-from pydantic import BaseModel
 from pathlib import Path
 import os
 import json
-
 
 BASE_DIR = Path(__file__).resolve().parent
 
 Environment = Literal["dev", "prod"]
 
-class FirebaseCredentials(BaseModel):
-    type: str
-    project_id: str
-    private_key_id: str
-    private_key: str
-    client_email: str
-    client_id: str
-    auth_uri: str
-    token_uri: str
-    auth_provider_x509_cert_url: str
-    client_x509_cert_url: str
-    universe_domain: str
+class FirebaseCredentials(BaseSettings):
+    type: str = ""
+    project_id: str = ""
+    private_key_id: str = ""
+    private_key: str = ""
+    client_email: str = ""
+    client_id: str = ""
+    auth_uri: str = ""
+    token_uri: str = ""
+    auth_provider_x509_cert_url: str = ""
+    client_x509_cert_url: str = ""
+    universe_domain: str = ""
 
+    model_config = SettingsConfigDict(
+        env_prefix="FIREBASE_",
+        extra="ignore",
+    )
 
 class CoreSettings(BaseSettings):
     ENV: Environment = "dev"
@@ -34,10 +37,6 @@ class CoreSettings(BaseSettings):
     S3_ACCESS_KEY: str = ""
     S3_SECRET_KEY: str = ""
     S3_ENDPOINT: str = ""
-    FIREBASE_CREDENTIALS: FirebaseCredentials | None = None
-    FIREBASE_CREDENTIALS_PATH: str = str(
-        BASE_DIR / "firebase_credential.json"
-    )
 
     @property
     def DATABASE_URL(self) -> str:
@@ -50,13 +49,9 @@ class CoreSettings(BaseSettings):
         )
 
     @property
+    @abstractmethod
     def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
-        if self.FIREBASE_CREDENTIALS is not None:
-            return self.FIREBASE_CREDENTIALS
-        path = Path(self.FIREBASE_CREDENTIALS_PATH)
-        with path.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-        return FirebaseCredentials.model_validate(data)
+        raise NotImplementedError
 
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",
@@ -65,7 +60,21 @@ class CoreSettings(BaseSettings):
 
 
 class DevSettings(CoreSettings):
+    """
+    Development settings for the application.
+    """
     ENV: Environment = "dev"
+    FIREBASE_CREDENTIALS_PATH: str = str(
+        BASE_DIR / "firebase_credential.json"
+    )
+
+    @property
+    @override
+    def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
+        path = Path(self.FIREBASE_CREDENTIALS_PATH)
+        with path.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+        return FirebaseCredentials.model_validate(data)
 
     model_config = SettingsConfigDict(
         env_file=".env.dev",
@@ -75,7 +84,15 @@ class DevSettings(CoreSettings):
 
 
 class ProdSettings(CoreSettings):
+    """
+    Production settings for the application.
+    """
     ENV: Environment = "prod"
+
+    @property
+    @override
+    def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
+        return FirebaseCredentials()
 
     model_config = SettingsConfigDict(
         extra="ignore",
