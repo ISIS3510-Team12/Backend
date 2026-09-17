@@ -8,10 +8,6 @@ function getEnv(name: string): string {
   return value;
 }
 
-export function getFirebaseCredentialPath(): string {
-  return getEnv("FIREBASE_CREDENTIAL_PATH");
-}
-
 export function getFirebaseConfig() {
   return {
     apiKey: getEnv("FIREBASE_API_KEY"),
@@ -20,5 +16,13 @@ export function getFirebaseConfig() {
     storageBucket: getEnv("FIREBASE_STORAGE_BUCKET"),
     messagingSenderId: getEnv("FIREBASE_MESSAGING_SENDER_ID"),
     appId: getEnv("FIREBASE_APP_ID"),
+  };
+}
+
+export function getFirebaseAdminConfig() {
+  return {
+    projectId: getEnv("FIREBASE_PROJECT_ID"),
+    clientEmail: getEnv("FIREBASE_CLIENT_EMAIL"),
+    privateKey: getEnv("FIREBASE_PRIVATE_KEY").replaceAll(String.raw`\n`, "\n"),
   };
 }

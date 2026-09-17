@@ -16,24 +16,27 @@ Web app and go in `.env`.
 4. Copy its values into `tools/firebase-auth/.env`:
 
 ```dotenv
-FIREBASE_CREDENTIAL_PATH=./firebase_credential.json
 FIREBASE_API_KEY=your-api-key
 FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
 FIREBASE_PROJECT_ID=your-project-id
 FIREBASE_STORAGE_BUCKET=your-storage-bucket
 FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 FIREBASE_APP_ID=your-app-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
 
 The Web API key is the `apiKey` value in that Firebase config.
 
 ### Admin credentials
 
-This credential configures the Firebase Admin SDK. It is a private
-service-account JSON file and does not go in `.env`.
+These values configure the Firebase Admin SDK and come from a private
+service-account key.
 
 1. Open **Project settings > Service accounts > Generate new private key**.
-2. Save the downloaded file here as `firebase_credential.json`.
+2. Copy `client_email` to `FIREBASE_CLIENT_EMAIL`.
+3. Copy `private_key` to `FIREBASE_PRIVATE_KEY`, keeping newline characters as
+   `\n` in the `.env` value.
 
 ## Run
 
