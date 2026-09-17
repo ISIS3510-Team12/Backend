@@ -46,5 +46,5 @@ pnpm test:firebase-auth
 ```
 
 Choose **Sign up** to create a test user or **Sign in** to get a token for an
-existing user. The CLI prints the user's real Firebase ID token and verifies it
+existing user. The CLI prints the user's Firebase ID token and verifies it
 with Firebase Admin.
