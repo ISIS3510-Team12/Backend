@@ -49,9 +49,8 @@ class CoreSettings(BaseSettings):
         )
 
     @property
-    @abstractmethod
     def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
-        raise NotImplementedError
+        return FirebaseCredentials()
 
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",
@@ -64,17 +63,6 @@ class DevSettings(CoreSettings):
     Development settings for the application.
     """
     ENV: Environment = "dev"
-    FIREBASE_CREDENTIALS_PATH: str = str(
-        BASE_DIR / "firebase_credential.json"
-    )
-
-    @property
-    @override
-    def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
-        path = Path(self.FIREBASE_CREDENTIALS_PATH)
-        with path.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-        return FirebaseCredentials.model_validate(data)
 
     model_config = SettingsConfigDict(
         env_file=".env.dev",
@@ -88,11 +76,6 @@ class ProdSettings(CoreSettings):
     Production settings for the application.
     """
     ENV: Environment = "prod"
-
-    @property
-    @override
-    def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
-        return FirebaseCredentials()
 
     model_config = SettingsConfigDict(
         extra="ignore",
