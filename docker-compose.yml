@@ -20,9 +20,6 @@ services:
       - .env.dev
     ports:
       - "9000:9000"
-    environment:
-      VAULTS3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      VAULTS3_SECRET_KEY: ${S3_SECRET_KEY}
     volumes:
       - vaults3_data:/data
       - vaults3_meta:/metadata

@@ -125,6 +125,9 @@ celerybeat.pid
 
 # Environments
 .env
+.env.dev
+.env.prod
+.env.example
 .venv
 env/
 venv/
@@ -172,5 +175,8 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+# Firebase service account key file
+firebase_credential.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python

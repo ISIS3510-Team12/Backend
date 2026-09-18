@@ -1,10 +1,32 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Literal
+from abc import abstractmethod
+from typing import Literal, override
 from functools import lru_cache
-from pydantic import BaseModel
+from pathlib import Path
 import os
+import json
+
+BASE_DIR = Path(__file__).resolve().parent
 
 Environment = Literal["dev", "prod"]
+
+class FirebaseCredentials(BaseSettings):
+    type: str = ""
+    project_id: str = ""
+    private_key_id: str = ""
+    private_key: str = ""
+    client_email: str = ""
+    client_id: str = ""
+    auth_uri: str = ""
+    token_uri: str = ""
+    auth_provider_x509_cert_url: str = ""
+    client_x509_cert_url: str = ""
+    universe_domain: str = ""
+
+    model_config = SettingsConfigDict(
+        env_prefix="FIREBASE_",
+        extra="ignore",
+    )
 
 class CoreSettings(BaseSettings):
     ENV: Environment = "dev"
@@ -26,6 +48,10 @@ class CoreSettings(BaseSettings):
             db=self.POSTGRES_DB,
         )
 
+    @property
+    def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
+        return FirebaseCredentials()
+
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",
         extra="ignore",
@@ -33,6 +59,9 @@ class CoreSettings(BaseSettings):
 
 
 class DevSettings(CoreSettings):
+    """
+    Development settings for the application.
+    """
     ENV: Environment = "dev"
 
     model_config = SettingsConfigDict(
@@ -43,6 +72,9 @@ class DevSettings(CoreSettings):
 
 
 class ProdSettings(CoreSettings):
+    """
+    Production settings for the application.
+    """
     ENV: Environment = "prod"
 
     model_config = SettingsConfigDict(
