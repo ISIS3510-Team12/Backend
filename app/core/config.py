@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from abc import abstractmethod
-from typing import Literal, override
+from typing import Literal
 from functools import lru_cache
 from pathlib import Path
 import os
@@ -82,7 +81,7 @@ class ProdSettings(CoreSettings):
     )
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_settings() -> CoreSettings:
     env = os.getenv("ENV", "dev")
 
