@@ -2,12 +2,12 @@ from datetime import UTC, datetime
 from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from app.core.dependencies.auth import FirebaseUser, CurrentUser
-from app.models import User
+from app.models import User, UserPreferences
 from app.core.dependencies.services import UserServiceDep
-from app.schemas import UserCreate
+from app.schemas import UserCreate, UserPreferencesUpdate
 
 router = APIRouter(
-    prefix="/auth",
+    prefix="/users",
 )
 
 @router.post(
@@ -48,12 +48,11 @@ def create_user(
         )
     
     persisted_user = service.create_user(user)
-
+    service.create_user_preferences(UserPreferences(user_id=persisted_user.user_id))
     return persisted_user
 
 
-
-@router.get(
+@router.post(
     "/create-db-user",
     status_code=status.HTTP_201_CREATED,
 )
@@ -79,14 +78,44 @@ def create_db_user(
     persisted_user = service.create_user(user)
     return persisted_user
 
-
 @router.get(
     "/current_user",
 )
 def get_current_user(current_user: CurrentUser) -> User:
     """
-    Retrieve the current authenticated application user.
+    Get the current authenticated application user.
+    - Return User
+    - Return UserPreferences
     """
     return current_user
+
+
+@router.get(
+    "/current_db_user",
+)
+def get_current_db_user(
+    service: UserServiceDep,
+    user_id: str,
+) -> Any:
+    """
+    Retrieve the current authenticated application user.
+    """
+    persisted_user = service.get_user_by_id(user_id)
+    if persisted_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    preferences = service.get_user_preferences_by_user_id(user_id)
+    if preferences is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User preferences not found",
+        )
+    user = persisted_user.model_dump()
+    user["preferences"] = preferences.model_dump()
+    return user
+    
+
 
 

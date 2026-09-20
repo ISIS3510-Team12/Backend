@@ -10,8 +10,7 @@ class UserService:
     def create_user(self, user: User) -> User:
         return self.repository.save(user)
 
-    def create_user_preferences(self, user: User) -> UserPreferences:
-        preferences = UserPreferences(user_id=user.user_id)
+    def create_user_preferences(self, preferences: UserPreferences) -> UserPreferences:
         return self.repository.save_preferences(preferences)
 
     def update_user(self, user_id: str, user: UserUpdate) -> None:
@@ -27,8 +26,6 @@ class UserService:
         if not db_user:
             raise UserNotFoundException(user_id)
         db_preferences = db_user.preferences
-        if not self.repository.get_preferences_by_user_id(db_user.user_id):
-            db_preferences = UserPreferences(user_id=user_id)
         preferences_data = preferences.model_dump(exclude_unset=True)
         db_preferences.sqlmodel_update(preferences_data)
         self.repository.save_preferences(db_preferences)
@@ -38,6 +35,9 @@ class UserService:
 
     def get_user_by_email(self, email: str) -> User | None:
         return self.repository.get_by_email(email)
+
+    def get_user_preferences_by_user_id(self, user_id: str) -> UserPreferences | None:
+        return self.repository.get_preferences_by_user_id(user_id)
 
     def delete_user(self, user: User) -> None:
         self.repository.remove(user)
