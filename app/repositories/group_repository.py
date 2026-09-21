@@ -22,16 +22,16 @@ class GroupRepository(BaseRepository):
         self.db.refresh(group)
         return project
 
-    def get_by_id(self, group_id: str) -> Group | None:
+    def get_by_id(self, group_id: int) -> Group | None:
         return self.db.get(Group, group_id)
 
-    def get_group_users(self, group_id: str) -> list[User] | None:
+    def get_group_users(self, group_id: int) -> list[User] | None:
         group = self.db.get(Group, group_id)
         if group:
             return group.users
         return None
 
-    def get_group_projects(self, group_id: str) -> list[Project] | None:
+    def get_group_projects(self, group_id: int) -> list[Project] | None:
         group = self.db.get(Group, group_id)
         if group:
             return group.projects

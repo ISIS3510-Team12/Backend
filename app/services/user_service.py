@@ -31,7 +31,7 @@ class UserService:
         if not db_user:
             raise UserNotFoundException(user_id)
 
-        db_preferences = self.repository.get_user_preferences(user_id)
+        db_preferences = self.repository.get_user_preferences(db_user.user_id)
         if not db_preferences:
             raise UserPreferencesNotFoundException(user_id)
         

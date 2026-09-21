@@ -39,6 +39,13 @@ class FirebaseUserUIDMissingException(BaseHTTPException):
         message = "Firebase user must have a UID."
         super().__init__(status_code=400, message=message)
 
+class TaskExistsException(BaseHTTPException):
+    """
+    Exception raised when a task already exists for a user.
+    """
+    def __init__(self, task_id: int):
+        message = f"Task with ID {task_id} already exists for this user."
+        super().__init__(status_code=400, message=message)
 
 class TaskNotFoundException(BaseHTTPException):
     """

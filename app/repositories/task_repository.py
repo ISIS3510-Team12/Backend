@@ -34,31 +34,31 @@ class TaskRepository(BaseRepository):
         self.db.refresh(task_event)
         return task_event
     
-    def get_task_by_user_id(self, user_id: str, task_id: str) -> Task | None:
+    def get_task_by_user_id(self, user_id: str, task_id: int) -> Task | None:
         task = self.db.get(Task, task_id)
         if task and task.user_id == user_id:
             return task
         return None
 
-    def get_task_time_blocks(self, task_id: str) -> list[TimeBlock] | None:
+    def get_task_time_blocks(self, task_id: int) -> list[TimeBlock] | None:
         task = self.db.get(Task, task_id)
         if task:
             return task.time_blocks
         return None
 
-    def get_task_reminders(self, task_id: str) -> list[Reminder] | None:
+    def get_task_reminders(self, task_id: int) -> list[Reminder] | None:
         task = self.db.get(Task, task_id)
         if task:
             return task.reminders
         return None
 
-    def get_task_attachments(self, task_id: str) -> list[Attachment] | None:
+    def get_task_attachments(self, task_id: int) -> list[Attachment] | None:
         task = self.db.get(Task, task_id)
         if task:
             return task.attachments
         return None
 
-    def get_task_events(self, task_id: str) -> list[TaskEvent] | None:
+    def get_task_events(self, task_id: int) -> list[TaskEvent] | None:
         task = self.db.get(Task, task_id)
         if task:
             return task.events

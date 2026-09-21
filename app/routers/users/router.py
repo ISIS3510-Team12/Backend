@@ -2,9 +2,9 @@ from datetime import UTC, datetime
 from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from app.core.dependencies.auth import FirebaseUser, CurrentUser
-from app.models import User, UserPreferences
+from app.models import User
 from app.core.dependencies.services import UserServiceDep
-from app.schemas import UserCreate, UserPreferencesUpdate
+from app.schemas import UserCreate
 
 router = APIRouter(
     prefix="/users",
