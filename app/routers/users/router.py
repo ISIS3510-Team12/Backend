@@ -18,26 +18,12 @@ def create_user(
     request: UserCreate,
     firebase_user: FirebaseUser,
     service: UserServiceDep,
-) -> User:
+):
     """
     Create an application user from a verified Firebase identity.
     """
-    uid = firebase_user.get("uid")
-
-    if not isinstance(uid, str) or not uid:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Firebase user must have a UID",
-        )
-
-    if service.get_user_by_id(uid) is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User already exists",
-        )
-
+    uid = service.check_user_firebase_uid(firebase_user)
     auth_provider = service.get_auth_provider(firebase_user)
-
     user = User(
             user_id=uid,
             first_name=request.first_name,
@@ -46,10 +32,7 @@ def create_user(
             auth_provider=auth_provider,
             last_active_at=datetime.now(UTC),
         )
-    
     persisted_user = service.create_user(user)
-    user_preferences = UserPreferences(user_id=persisted_user.user_id, push_enabled=True)
-    service.create_user_preferences(persisted_user.user_id, user_preferences)
     return persisted_user
 
 
@@ -60,7 +43,7 @@ def create_user(
 def create_db_user(
     uid: str,
     service: UserServiceDep,
-) -> User:
+):
     """
     Create a sample user for the database.
     """

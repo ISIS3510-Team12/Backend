@@ -1,6 +1,6 @@
 from . import BaseRepository
-from app.models import User, UserPreferences, Group
-from app.exceptions import UserNotFoundException
+from app.models import User, UserPreferences, Group, Task
+from sqlmodel import select
 
 class UserRepository(BaseRepository):
 
@@ -10,11 +10,7 @@ class UserRepository(BaseRepository):
         self.db.refresh(user)
         return user
 
-    def save_preferences_to_user(self, user_id: str, preferences: UserPreferences) -> UserPreferences:
-        user = self.db.get(User, user_id)
-        if not user:
-            raise UserNotFoundException(user_id)
-        user.preferences = preferences
+    def save_preferences_to_user(self, preferences: UserPreferences) -> UserPreferences:
         self.db.add(preferences)
         self.db.commit()
         self.db.refresh(preferences)
@@ -36,6 +32,12 @@ class UserRepository(BaseRepository):
         user = self.db.get(User, user_id)
         if user:
             return user.groups
+        return None
+
+    def get_user_tasks(self, user_id: str) -> list[Task] | None:
+        user = self.db.get(User, user_id)
+        if user:
+            return user.tasks
         return None
         
     def remove(self, user: User) -> None:

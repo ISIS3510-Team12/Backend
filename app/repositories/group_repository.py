@@ -9,6 +9,19 @@ class GroupRepository(BaseRepository):
         self.db.refresh(group)
         return group
 
+    def save_users_to_group(self, group: Group, users: list[User]) -> Group:
+        group.users.extend(users)
+        self.db.add(group)
+        self.db.commit()
+        return group
+
+    def save_project_to_group(self, project: Project, group: Group) -> Project:
+        group.projects.append(project)
+        self.db.add(group)
+        self.db.commit()
+        self.db.refresh(group)
+        return project
+
     def get_by_id(self, group_id: str) -> Group | None:
         return self.db.get(Group, group_id)
 

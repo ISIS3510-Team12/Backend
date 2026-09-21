@@ -1,6 +1,6 @@
 from app.repositories.user_repository import UserRepository
 from app.models import User, UserPreferences
-from app.exceptions import UserNotFoundException
+from app.exceptions import UserNotFoundException, UserExistsException, FirebaseUserUIDMissingException, UserPreferencesNotFoundException
 from app.schemas import UserUpdate, UserPreferencesUpdate
 
 class UserService:
@@ -8,10 +8,15 @@ class UserService:
         self.repository = repository
 
     def create_user(self, user: User) -> User:
-        return self.repository.save(user)
-
-    def create_user_preferences(self, user_id:str, preferences: UserPreferences) -> UserPreferences:
-        return self.repository.save_preferences_to_user(user_id, preferences)
+        if self.repository.get_by_id(user.user_id):
+            raise UserExistsException(user.user_id)
+        persisted_user = self.repository.save(user)
+        user_response = persisted_user.model_dump()
+        existing_preferences = self.repository.get_user_preferences(persisted_user.user_id)
+        if not existing_preferences:
+            preferences = UserPreferences(user_id=persisted_user.user_id, push_enabled=False)
+            self.repository.save_preferences_to_user(preferences)
+        return User.model_validate(user_response)
 
     def update_user(self, user_id: str, user: UserUpdate) -> None:
         db_user = self.repository.get_by_id(user_id)
@@ -25,10 +30,14 @@ class UserService:
         db_user = self.repository.get_by_id(user_id)
         if not db_user:
             raise UserNotFoundException(user_id)
-        db_preferences = db_user.preferences
+
+        db_preferences = self.repository.get_user_preferences(user_id)
+        if not db_preferences:
+            raise UserPreferencesNotFoundException(user_id)
+        
         preferences_data = preferences.model_dump(exclude_unset=True)
         db_preferences.sqlmodel_update(preferences_data)
-        self.repository.save_preferences_to_user(db_user.user_id, db_preferences)
+        self.repository.save_preferences_to_user(db_preferences)
         
     def get_user_by_id(self, user_id: str) -> User | None:
         return self.repository.get_by_id(user_id)
@@ -39,9 +48,6 @@ class UserService:
     def get_user_preferences_by_user_id(self, user_id: str) -> UserPreferences | None:
         return self.repository.get_user_preferences(user_id)
 
-    def delete_user(self, user: User) -> None:
-        self.repository.remove(user)
-
     def get_auth_provider(self, firebase_user: dict) -> str:
         firebase_claims = firebase_user.get("firebase")
         if not isinstance(firebase_claims, dict):
@@ -50,3 +56,14 @@ class UserService:
         if isinstance(sign_in_provider, str) and sign_in_provider:
             return sign_in_provider
         return "firebase"
+
+    def check_user_firebase_uid(self, firebase_user: dict) -> str:
+        uid = firebase_user.get("uid")
+        if isinstance(uid, str) and uid:
+            return uid
+        raise FirebaseUserUIDMissingException()
+
+    def delete_user(self, user: User) -> None:
+        self.repository.remove(user)
+
+    

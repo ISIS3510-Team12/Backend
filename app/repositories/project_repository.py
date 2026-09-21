@@ -9,8 +9,11 @@ class ProjectRepository(BaseRepository):
         self.db.refresh(project)
         return project
 
-    def get_by_id(self, project_id: str) -> Project | None:
-        return self.db.get(Project, project_id)
+    def get_project_by_group_id(self, group_id: str, project_id: str) -> Project | None:
+        project = self.db.get(Project, project_id)
+        if project and project.group_id == group_id:
+            return project
+        return None
 
     def get_project_tasks(self, project_id: str) -> list[Task] | None:
         project = self.db.get(Project, project_id)

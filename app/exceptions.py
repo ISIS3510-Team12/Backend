@@ -1,41 +1,57 @@
-class BaseException(Exception):
-    """
-    Base class for all custom exceptions in the application.
-    """
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
+from fastapi import HTTPException
 
+class BaseHTTPException(HTTPException):
+    """
+    Base class for all custom HTTP exceptions in the application.
+    """
+    def __init__(self, status_code: int, message: str):
+        super().__init__(status_code=status_code, detail=message)
 
-class UserNotFoundException(BaseException):
+class UserNotFoundException(BaseHTTPException):
     """
     Exception raised when a user is not found in the database.
     """
     def __init__(self, user_id: str):
-        message = f"User with ID '{user_id}' not found."
-        super().__init__(message)
+        message = f"User with ID {user_id} not found."
+        super().__init__(status_code=404, message=message)
 
-class TaskNotFoundException(BaseException):
+class UserExistsException(BaseHTTPException):
+    """
+    Exception raised when a user already exists in the database.
+    """
+    def __init__(self, user_id: str):
+        message = f"User with ID {user_id} already exists."
+        super().__init__(status_code=400, message=message)
+
+class UserPreferencesNotFoundException(BaseHTTPException):
+    """
+    Exception raised when user preferences are not found in the database.
+    """
+    def __init__(self, user_id: str):
+        message = f"User preferences for user ID {user_id} not found."
+        super().__init__(status_code=404, message=message)
+
+class FirebaseUserUIDMissingException(BaseHTTPException):
+    """
+    Exception raised when a Firebase user does not have a UID.
+    """
+    def __init__(self):
+        message = "Firebase user must have a UID."
+        super().__init__(status_code=400, message=message)
+
+
+class TaskNotFoundException(BaseHTTPException):
     """
     Exception raised when a task is not found in the database.
     """
     def __init__(self, task_id: str):
-        message = f"Task with ID '{task_id}' not found."
-        super().__init__(message)
+        message = f"Task with ID {task_id} not found."
+        super().__init__(status_code=404, message=message)
 
-class TaskObjectNotSupportedException(BaseException):
+class TaskObjectNotSupportedException(BaseHTTPException):
     """
-    Exception raised when an unsupported object type is attempted to be saved to a task.
+    Exception raised when an unsupported object type is added to a task.
     """
     def __init__(self, object_type: str):
-        message = f"Object type '{object_type}' is not supported for saving to a task."
-        super().__init__(message)   
-
-
-class UserEmailNotFoundException(BaseException):
-    """
-    Exception raised when a user with a specific email is not found in the database.
-    """
-    def __init__(self, email: str):
-        message = f"User with email '{email}' not found."
-        super().__init__(message)
+        message = f"Object of type {object_type} is not supported for tasks."
+        super().__init__(status_code=400, message=message)
