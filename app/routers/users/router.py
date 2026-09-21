@@ -23,10 +23,12 @@ def create_user(
     Create an application user from a verified Firebase identity.
     """
     uid = service.check_user_firebase_uid(firebase_user)
+    email = service.check_user_firebase_email(firebase_user)
     auth_provider = service.get_auth_provider(firebase_user)
+
     user = User(
             user_id=uid,
-            email=request.email,
+            email=email,
             first_name=request.first_name,
             last_name=request.last_name,
             major=request.major,
@@ -37,71 +39,17 @@ def create_user(
     return persisted_user
 
 
-@router.post(
-    "/create-db-user",
-    status_code=status.HTTP_201_CREATED,
-)
-def create_db_user(
-    uid: str,
-    service: UserServiceDep,
-):
-    """
-    Create a sample user for the database.
-    """
-
-    auth_provider = service.get_auth_provider({"firebase": {"sign_in_provider": "firebase"}})
-
-    user = User(
-            user_id=uid,
-            email="",
-            first_name="",
-            last_name="",
-            major="",
-            auth_provider=auth_provider,
-            last_active_at=datetime.now(UTC),
-        )
-    
-    persisted_user = service.create_user(user)
-    return persisted_user
-
 @router.get(
     "/current_user",
 )
-def get_current_user(current_user: CurrentUser) -> User:
+def get_current_user(current_user: CurrentUser):
     """
     Get the current authenticated application user.
-    - Return User
-    - Return UserPreferences
     """
     return current_user
 
 
-@router.get(
-    "/current_db_user",
-)
-def get_current_db_user(
-    service: UserServiceDep,
-    user_id: str,
-) -> Any:
-    """
-    Retrieve the current authenticated application user.
-    """
-    persisted_user = service.get_user_by_id(user_id)
-    if persisted_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    preferences = service.get_user_preferences_by_user_id(user_id)
-    if preferences is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User preferences not found",
-        )
-    user = persisted_user.model_dump()
-    user["preferences"] = preferences.model_dump()
-    return user
-    
+
 
 
 

@@ -83,6 +83,12 @@ class UserService:
             return uid
         raise FirebaseUserUIDMissingException()
 
+    def check_user_firebase_email(self, firebase_user: dict) -> str:
+        email = firebase_user.get("email")
+        if isinstance(email, str) and email:
+            return email
+        raise FirebaseUserUIDMissingException()
+
     def delete_user(self, user: User) -> None:
         self.repository.db.delete(user)
 
