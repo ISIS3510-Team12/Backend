@@ -13,14 +13,16 @@ class UserService:
     def create_user(self, user: User) -> User:
         if self.repository.get_by_id(user.user_id):
             raise UserExistsException(user.user_id)
-        persisted_user = self.repository.save(user)
-        user_response = persisted_user.model_dump()
-        existing_preferences = self.repository.get_user_preferences(persisted_user.user_id)
-        if not existing_preferences:
-            preferences = UserPreferences(user_id=persisted_user.user_id, push_enabled=False)
-            self.repository.save_preferences_to_user(preferences)
+        self.repository.db.add(user)
+        self.repository.db.commit()
+        persisted_user = self.repository.get_by_id(user.user_id)
+        if not persisted_user:
+            raise UserNotFoundException(user.user_id)
+        default_preferences = UserPreferences(user_id=persisted_user.user_id)
+        self.repository.db.add(default_preferences)
+        self.repository.db.commit()
         self.setup_user_folder_bucket(persisted_user.user_id)
-        return User.model_validate(user_response)
+        return persisted_user
 
     def setup_user_folder_bucket(self, user_id: str) -> None:
         bucket_name = "files"
@@ -42,7 +44,9 @@ class UserService:
             raise UserNotFoundException(user_id)
         user_data = user.model_dump(exclude_unset=True)
         db_user.sqlmodel_update(user_data)
-        self.repository.save(db_user)
+        self.repository.db.add(db_user)
+        self.repository.db.commit()
+
 
     def update_user_preferences(self, user_id: str, preferences: UserPreferencesUpdate) -> None:
         db_user = self.repository.get_by_id(user_id)
@@ -55,13 +59,11 @@ class UserService:
         
         preferences_data = preferences.model_dump(exclude_unset=True)
         db_preferences.sqlmodel_update(preferences_data)
-        self.repository.save_preferences_to_user(db_preferences)
+        self.repository.db.add(db_preferences)
+        self.repository.db.commit()
         
     def get_user_by_id(self, user_id: str) -> User | None:
         return self.repository.get_by_id(user_id)
-
-    def get_user_by_email(self, email: str) -> User | None:
-        return self.repository.get_by_email(email)
 
     def get_user_preferences_by_user_id(self, user_id: str) -> UserPreferences | None:
         return self.repository.get_user_preferences(user_id)
@@ -82,6 +84,6 @@ class UserService:
         raise FirebaseUserUIDMissingException()
 
     def delete_user(self, user: User) -> None:
-        self.repository.remove(user)
+        self.repository.db.delete(user)
 
     
