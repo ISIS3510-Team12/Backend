@@ -10,6 +10,7 @@ class User(SQLModel, table=True):
     user_id: str = Field(primary_key=True, index=True)
     first_name: str
     last_name: str
+    email: str
     major: str
     auth_provider: str
     last_active_at: datetime
@@ -40,7 +41,7 @@ class UserPreferences(SQLModel, table=True):
 
     
 class Group(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True, index=True)
     name: str
     description: str
     deadline: datetime
@@ -54,7 +55,7 @@ class Group(SQLModel, table=True):
     )
 
 class Project(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True, index=True)
     name: str
     description: str
     deadline: datetime
@@ -68,11 +69,7 @@ class Project(SQLModel, table=True):
     )
 
 class Task(SQLModel, table=True):
-    id: int | None = Field(
-        default=None,
-        primary_key=True,
-    )
-
+    id: int = Field(primary_key=True, index=True)
     title: str
     task_type: str
     status: str
@@ -117,10 +114,7 @@ class Task(SQLModel, table=True):
     )
     
 class TimeBlock(SQLModel, table=True):
-    id: int | None = Field(
-        default=None,
-        primary_key=True,
-    )
+    id: int = Field(primary_key=True, index=True)
 
     start_at: datetime
     end_at: datetime
@@ -135,10 +129,7 @@ class TimeBlock(SQLModel, table=True):
     )
 
 class Reminder(SQLModel, table=True):
-    id: int | None = Field(
-        default=None,
-        primary_key=True,
-    )
+    id: int = Field(primary_key=True, index=True)
 
     kind: str
     scheduled_at: datetime
@@ -155,11 +146,7 @@ class Reminder(SQLModel, table=True):
     )
 
 class Attachment(SQLModel, table=True):
-    id: int | None = Field(
-        default=None,
-        primary_key=True,
-    )
-
+    id: int = Field(primary_key=True, index=True)
     kind: str
     bucket: str
     key: str
@@ -175,10 +162,7 @@ class Attachment(SQLModel, table=True):
     )
 
 class TaskEvent(SQLModel, table=True):
-    id: int | None = Field(
-        default=None,
-        primary_key=True,
-    )
+    id: int = Field(primary_key=True, index=True)
 
     event_type: str
     occurred_at: datetime

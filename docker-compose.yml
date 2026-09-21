@@ -1,30 +1,4 @@
 services:
-  db:
-    image: postgres:17-alpine
-    env_file:
-      - .env.dev
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    
-
-  s3:
-    image: eniz1806/vaults3:latest
-    env_file:
-      - .env.dev
-    ports:
-      - "9000:9000"
-    volumes:
-      - vaults3_data:/data
-      - vaults3_meta:/metadata
-    restart: unless-stopped
-
   backend:
     build: .
     env_file:
@@ -35,13 +9,4 @@ services:
       - ./app:/app/app
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
-    depends_on:
-      db:
-        condition: service_healthy
-      s3:
-        condition: service_healthy
 
-volumes:
-  pgdata:
-  vaults3_data:
-  vaults3_meta:

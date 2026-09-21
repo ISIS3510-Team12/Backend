@@ -5,9 +5,10 @@ from app.services.user_service import UserService
 from app.services.task_service import TaskService
 from app.services.group_service import GroupService
 from app.services.project_service import ProjectService
+from app.core.dependencies.external import S3ClientDep
 
-def get_user_service(repo: UserRepositoryDep) -> UserService:
-    return UserService(repo)
+def get_user_service(repo: UserRepositoryDep, s3_client: S3ClientDep) -> UserService:
+    return UserService(repo, s3_client)
 
 UserServiceDep = Annotated[
     UserService,

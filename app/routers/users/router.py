@@ -26,6 +26,7 @@ def create_user(
     auth_provider = service.get_auth_provider(firebase_user)
     user = User(
             user_id=uid,
+            email=request.email,
             first_name=request.first_name,
             last_name=request.last_name,
             major=request.major,
@@ -52,6 +53,7 @@ def create_db_user(
 
     user = User(
             user_id=uid,
+            email="",
             first_name="",
             last_name="",
             major="",

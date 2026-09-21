@@ -5,7 +5,7 @@ from app.core.dependencies.database import DatabaseSession
 from app.core.lifespan import lifespan
 from fastapi.responses import RedirectResponse
 
-app = FastAPI(title="Back-end",lifespan=lifespan)
+app = FastAPI(title="Juggle Backend",lifespan=lifespan)
 
 app.include_router(s3_router.router)
 app.include_router(users_router.router)

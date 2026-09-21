@@ -2,10 +2,13 @@ from app.repositories.user_repository import UserRepository
 from app.models import User, UserPreferences
 from app.exceptions import UserNotFoundException, UserExistsException, FirebaseUserUIDMissingException, UserPreferencesNotFoundException
 from app.schemas import UserUpdate, UserPreferencesUpdate
+from botocore.exceptions import ClientError
+from app.core.dependencies.external import S3ClientDep
 
 class UserService:
-    def __init__(self, repository: UserRepository):
+    def __init__(self, repository: UserRepository, s3_client: S3ClientDep):
         self.repository = repository
+        self.s3_client = s3_client
 
     def create_user(self, user: User) -> User:
         if self.repository.get_by_id(user.user_id):
@@ -16,8 +19,23 @@ class UserService:
         if not existing_preferences:
             preferences = UserPreferences(user_id=persisted_user.user_id, push_enabled=False)
             self.repository.save_preferences_to_user(preferences)
+        self.setup_user_folder_bucket(persisted_user.user_id)
         return User.model_validate(user_response)
 
+    def setup_user_folder_bucket(self, user_id: str) -> None:
+        bucket_name = "files"
+        file_name = f"attachments/{user_id}/blob.txt"
+        body_content = b"Hello, World!"
+        try:
+            self.s3_client.put_object(
+                Bucket=bucket_name,
+                Key=file_name,
+                Body=body_content,
+                ContentType="text/plain",
+            )
+        except ClientError as e:
+            print(f"Could not create user folder in bucket '{bucket_name}': {str(e)}")
+        
     def update_user(self, user_id: str, user: UserUpdate) -> None:
         db_user = self.repository.get_by_id(user_id)
         if not db_user:
