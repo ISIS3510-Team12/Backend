@@ -48,7 +48,8 @@ def create_user(
         )
     
     persisted_user = service.create_user(user)
-    service.create_user_preferences(UserPreferences(user_id=persisted_user.user_id))
+    user_preferences = UserPreferences(user_id=persisted_user.user_id, push_enabled=True)
+    service.create_user_preferences(persisted_user.user_id, user_preferences)
     return persisted_user
 
 
