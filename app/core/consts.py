@@ -1,12 +1,13 @@
 from enum import StrEnum
 
-class TaskEventType(StrEnum):
+class TaskStatus(StrEnum):
     COMPLETED = "completed"
     NOT_STARTED = "not started"
     IN_PROGRESS = "in_progress"
     
 class TaskEventType(StrEnum):
     CREATED = "created"
+    VIEWED = "viewed"
     UPDATED = "updated"
     DELETED = "deleted"
 
