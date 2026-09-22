@@ -13,11 +13,13 @@ services:
       timeout: 5s
       retries: 10
     
-
   s3:
     image: eniz1806/vaults3:latest
     env_file:
       - .env.dev
+    environment:
+      - VAULTS3_SECRET_KEY=mysupersecret
+      - VAULTS3_ACCESS_KEY=myadmin
     ports:
       - "9000:9000"
     volumes:

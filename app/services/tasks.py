@@ -1,13 +1,11 @@
-from datetime import UTC, datetime, timedelta
-
 from sqlmodel import Session, select
 
 from app.core.consts import (
     BASED_ON_FALLBACK,
     BASED_ON_HISTORY,
+    DEFAULT_TASK_DURATION_MINUTES,
     EVENT_COMPLETED,
     EVENT_STARTED,
-    SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE,
     STATUS_COMPLETED,
 )
@@ -43,7 +41,6 @@ def estimate_task_duration(db: Session, task: Task, user: User) -> dict:
             Task.id != task.id,
             Task.status == STATUS_COMPLETED,
             Task.task_type == task.task_type,
-            Task.difficulty == task.difficulty,
         )
     ).all()
 
@@ -56,8 +53,8 @@ def estimate_task_duration(db: Session, task: Task, user: User) -> dict:
 
     if len(durations) == 0:
         return {
-            "suggested_duration_minutes": task.estimated_duration,
-            "current_estimate_minutes": task.estimated_duration,
+            "suggested_duration_minutes": DEFAULT_TASK_DURATION_MINUTES,
+            "current_estimate_minutes": DEFAULT_TASK_DURATION_MINUTES,
             "sample_size": 0,
             "based_on": BASED_ON_FALLBACK,
         }
@@ -70,54 +67,10 @@ def estimate_task_duration(db: Session, task: Task, user: User) -> dict:
 
     return {
         "suggested_duration_minutes": average,
-        "current_estimate_minutes": task.estimated_duration,
+        "current_estimate_minutes": DEFAULT_TASK_DURATION_MINUTES,
         "sample_size": len(durations),
         "based_on": BASED_ON_HISTORY,
     }
-
-
-def get_urgent_tasks(db: Session, user: User, within_hours: int) -> list[dict]:
-    """
-    Context aware feature. Returns the user's pending tasks whose project
-    deadline is close to the current time.
-    """
-    now = datetime.now(UTC).replace(tzinfo=None)
-    window_end = now + timedelta(hours=within_hours)
-
-    rows = db.exec(
-        select(Task, Project)
-        .join(Project, Task.project_id == Project.id)
-        .where(
-            Task.user_id == user.user_id,
-            Task.status != STATUS_COMPLETED,
-            Project.deadline >= now,
-            Project.deadline <= window_end,
-        )
-        .order_by(Project.deadline)
-    ).all()
-
-    urgent_tasks: list[dict] = []
-    for row in rows:
-        task = row[0]
-        project = row[1]
-
-        remaining = project.deadline - now
-        hours_left = round(remaining.total_seconds() / SECONDS_PER_HOUR, 1)
-
-        urgent_tasks.append(
-            {
-                "task_id": task.id,
-                "title": task.title,
-                "project_id": project.id,
-                "project_name": project.name,
-                "deadline": project.deadline,
-                "hours_left": hours_left,
-                "priority": task.priority,
-                "status": task.status,
-            }
-        )
-
-    return urgent_tasks
 
 
 def actual_duration_minutes(db: Session, task: Task) -> int | None:

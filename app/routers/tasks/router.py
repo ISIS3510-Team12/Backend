@@ -1,25 +1,16 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel
-from sqlmodel import Session
 
-from app.core.consts import (
-    DEFAULT_URGENT_WINDOW_HOURS,
-    MAX_URGENT_WINDOW_HOURS,
-    MIN_URGENT_WINDOW_HOURS,
-)
-from app.core.dependencies import CurrentUser
-from app.db import get_db
+from app.core.dependencies.auth import CurrentUser
+from app.core.dependencies.database import DatabaseSession
+from app.core.dependencies.services import TaskServiceDep
 from app.models import Task
-from app.services.tasks import (
-    estimate_task_duration,
-    get_urgent_tasks,
-    user_can_access_task,
-)
+from app.schemas import TaskCreate, TaskUpdate
+from app.services.tasks import estimate_task_duration, user_can_access_task
 
 router = APIRouter(
     prefix="/tasks",
+    tags=["tasks"]
 )
 
 
@@ -31,46 +22,21 @@ class DurationEstimateResponse(BaseModel):
     based_on: str
 
 
-class UrgentTaskResponse(BaseModel):
-    task_id: int
-    title: str
-    project_id: int
-    project_name: str
-    deadline: datetime
-    hours_left: float
-    priority: str
-    status: str
-
-
-class UrgentTasksResponse(BaseModel):
-    within_hours: int
-    count: int
-    tasks: list[UrgentTaskResponse]
-
-
-@router.get(
-    "/urgent",
-    response_model=UrgentTasksResponse,
-)
-def get_urgent_tasks_endpoint(
+@router.post("", status_code=status.HTTP_201_CREATED)
+def create_task(
+    data: TaskCreate,
     current_user: CurrentUser,
-    db: Session = Depends(get_db),
-    within_hours: int = Query(
-        default=DEFAULT_URGENT_WINDOW_HOURS,
-        ge=MIN_URGENT_WINDOW_HOURS,
-        le=MAX_URGENT_WINDOW_HOURS,
-    ),
-) -> UrgentTasksResponse:
-    """
-    Context aware feature. It lists pending tasks whose project deadline is close.
-    """
-    urgent_tasks = get_urgent_tasks(db, current_user, within_hours)
+    service: TaskServiceDep
+):
+    return service.create_task(current_user.user_id, data)
 
-    return UrgentTasksResponse(
-        within_hours=within_hours,
-        count=len(urgent_tasks),
-        tasks=urgent_tasks,
-    )
+
+@router.get("", status_code=status.HTTP_200_OK)
+def get_tasks(
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.get_tasks(current_user.user_id)
 
 
 @router.get(
@@ -80,7 +46,7 @@ def get_urgent_tasks_endpoint(
 def get_duration_estimate_endpoint(
     task_id: int,
     current_user: CurrentUser,
-    db: Session = Depends(get_db),
+    db: DatabaseSession,
 ) -> DurationEstimateResponse:
     """
     Smart feature. It suggests a realistic duration for a task from past activity.
@@ -108,3 +74,32 @@ def get_duration_estimate_endpoint(
         sample_size=estimate["sample_size"],
         based_on=estimate["based_on"],
     )
+
+
+@router.get("/{task_id}", status_code=status.HTTP_200_OK)
+def get_task(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.get_task(task_id, current_user.user_id)
+
+
+@router.patch("/{task_id}", status_code=status.HTTP_200_OK)
+def update_task(
+    task_id: int,
+    data: TaskUpdate,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.update_task(task_id, current_user.user_id, data)
+
+
+@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    service.delete_task(task_id, current_user.user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from botocore.exceptions import ClientError
-from app.core.dependencies import get_s3_client
+from app.core.dependencies.external import get_s3_client
 
 router = APIRouter(
     prefix="/s3",
 )
-
 
 @router.get("/buckets/{bucket_name}")
 def get_bucket(bucket_name: str, s3_client=Depends(get_s3_client)):
