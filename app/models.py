@@ -73,9 +73,9 @@ class Task(SQLModel, table=True):
     title: str
     task_type: str
     status: str
-    priority: str
-    difficulty: str
-    estimated_duration: int
+    is_priority: bool = False
+    needs_help: bool = False
+    deadline: datetime | None = None
 
     # Owner
     user_id: str = Field(
