@@ -15,8 +15,10 @@ UserServiceDep = Annotated[
     Depends(get_user_service),
 ]
 
-def get_task_service(repo: TaskRepositoryDep) -> TaskService:
-    return TaskService(repo)
+def get_task_service(
+    repo: TaskRepositoryDep,
+    project_repo: ProjectRepositoryDep) -> TaskService:
+    return TaskService(repo, project_repo)
 
 TaskServiceDep = Annotated[
     TaskService,

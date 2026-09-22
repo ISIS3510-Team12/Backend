@@ -62,3 +62,11 @@ class TaskObjectNotSupportedException(BaseHTTPException):
     def __init__(self, object_type: str):
         message = f"Object of type {object_type} is not supported for tasks."
         super().__init__(status_code=400, message=message)
+    
+class ProjectNotFoundException(BaseHTTPException):
+    """
+    Exception raised when a project is not found in the database.
+    """
+    def __init__(self, project_id: int):
+        message = f"Project with ID {project_id} not found."
+        super().__init__(status_code=404, message=message)
