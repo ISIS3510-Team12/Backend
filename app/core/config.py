@@ -21,6 +21,8 @@ class FirebaseCredentials(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="FIREBASE_",
+        env_file=".env.dev",
+        env_file_encoding="utf-8",
         extra="ignore",
     )
 
