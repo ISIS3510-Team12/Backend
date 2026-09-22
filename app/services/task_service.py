@@ -14,7 +14,7 @@ class TaskService:
         self.repository = repository
         self.project_repository = project_repository
 
-    def create_task(self, user_id:str ,data: TaskCreate) -> Task:
+    def create_task(self, user_id: int ,data: TaskCreate) -> Task:
         project = self.project_repository.get_project_by_id(data.project_id) if data.project_id else None
         
         if project is None and data.project_id is not None:
@@ -32,16 +32,32 @@ class TaskService:
         
         return self.repository.create_task(task)
 
-    def get_tasks(self, user_id: str) -> list[Task]:
+    def get_tasks_by_user(self, user_id: int) -> list[Task]:
         return self.repository.get_all_tasks_by_user(user_id)
     
-    def get_task(self, task_id: int, user_id: str) -> Task:
-        task = self.repository.get_task_by_id(task_id, user_id)
+    def get_task_by_user(self, task_id: int, user_id: int) -> Task:
+        task = self.repository.get_task_by_user_id(task_id, user_id)
         if task is None:
             raise TaskNotFoundException(task_id)
         return task
     
-    def update_task(self, task_id: int, user_id: str, data: TaskUpdate) -> Task:
+    def get_tasks_by_project(self, task_id: int, project_id: int) -> list[Task]:
+        project = self.project_repository.get_project_by_id(project_id)
+        if project is None:
+            raise ProjectNotFoundException(project_id)
+        
+        return self.repository.get_all_tasks_by_project(project_id)
+    
+    def get_task_by_project(self, task_id: int, project_id: int) -> Task:
+        project = self.project_repository.get_project_by_id(project_id)
+        if project is None:
+            raise ProjectNotFoundException(project_id)
+        task = self.repository.get_task_by_project(project_id)
+        if task is None:
+            raise TaskNotFoundException(task_id)
+        return task
+    
+    def update_task(self, task_id: int, user_id: int, data: TaskUpdate) -> Task:
         task = self.get_task(task_id, user_id)
         
         if data.project_id is not None:
@@ -51,6 +67,6 @@ class TaskService:
         
         return self.repository.update_task(task, data)
 
-    def delete_task(self, task_id: int, user_id: str) -> None:
+    def delete_task(self, task_id: int, user_id: int) -> None:
         task = self.get_task(task_id, user_id)
         self.repository.delete_task(task)
