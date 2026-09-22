@@ -38,6 +38,7 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: str | None = None
     task_type: str | None = None
+    status: str | None = None
     is_priority: str | None = None
     deadline: datetime | None = None
     project_id: int | None = None

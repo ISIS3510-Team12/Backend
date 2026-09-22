@@ -8,7 +8,8 @@ from app.core.consts import (
     SECONDS_PER_MINUTE,
     STATUS_COMPLETED,
 )
-from app.models import Project, Task, TaskEvent, User, UserGroup
+from app.models import Project, Task, User, UserGroup
+from app.repositories.task_event_repository import TaskEventRepository
 
 
 def user_can_access_task(db: Session, task: Task, user: User) -> bool:
@@ -76,9 +77,8 @@ def actual_duration_minutes(db: Session, task: Task) -> int | None:
     """
     Measures how long a task took by pairing its started and completed events.
     """
-    events = db.exec(
-        select(TaskEvent).where(TaskEvent.task_id == task.id)
-    ).all()
+    event_repository = TaskEventRepository(db)
+    events = event_repository.get_events_for_task(task.id)
 
     started_at = None
     completed_at = None

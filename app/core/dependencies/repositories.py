@@ -3,6 +3,7 @@ from fastapi import Depends
 from app.core.dependencies.database import DatabaseSession
 from app.repositories.user_repository import UserRepository
 from app.repositories.task_repository import TaskRepository
+from app.repositories.task_event_repository import TaskEventRepository
 from app.repositories.group_repository import GroupRepository
 from app.repositories.project_repository import ProjectRepository
 
@@ -20,6 +21,14 @@ def get_task_repository(db: DatabaseSession) -> TaskRepository:
 TaskRepositoryDep = Annotated[
     TaskRepository,
     Depends(get_task_repository),
+]
+
+def get_task_event_repository(db: DatabaseSession) -> TaskEventRepository:
+    return TaskEventRepository(db)
+
+TaskEventRepositoryDep = Annotated[
+    TaskEventRepository,
+    Depends(get_task_event_repository),
 ]
 
 def get_group_repository(db: DatabaseSession) -> GroupRepository:
