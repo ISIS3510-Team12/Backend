@@ -58,15 +58,15 @@ class TaskService:
         self.repository.register_task_event(task_event)
         return task
     
-    def get_tasks_by_project(self, project_id: int) -> list[Task]:
-        project = self.project_repository.get_project_by_id(project_id)
+    def get_tasks_by_project(self, project_id: int, user_id: int) -> list[Task]:
+        project = self.project_repository.get_project_by_id(project_id, user_id)
         if project is None:
             raise ProjectNotFoundException(project_id)
         
         return self.repository.get_all_tasks_by_project(project_id)
     
     def get_task_by_project(self, task_id: int, user_id: int, project_id: int) -> Task:
-        project = self.project_repository.get_project_by_id(project_id)
+        project = self.project_repository.get_project_by_id(project_id, user_id)
         if project is None:
             raise ProjectNotFoundException(project_id)
         task = self.repository.get_task_by_project(project_id)
@@ -111,3 +111,12 @@ class TaskService:
             author_id=user_id,
         )
         self.repository.register_task_event(task_event)
+        
+    def get_task_events_by_task(self, task_id: int) -> list[TaskEvent]:
+        task = self.repository.get_task_by_id(task_id)
+        if task is None:
+            raise TaskNotFoundException(task_id)
+        return self.repository.get_task_events_by_task_id(task.id)
+    
+    def get_task_events_by_user(self, user_id: int) -> list[TaskEvent]:
+        return self.repository.get_task_events_by_user_id(user_id)

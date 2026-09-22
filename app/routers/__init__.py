@@ -3,3 +3,4 @@ from .s3 import router as s3_router
 from .tasks import router as tasks_router
 from .projects import router as projects_router
 from .groups import router as groups_router
+from .telemetry import router as telemetry_router

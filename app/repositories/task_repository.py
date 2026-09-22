@@ -3,6 +3,9 @@ from app.models import Task, User, TimeBlock, Reminder, Attachment, TaskEvent
 from sqlmodel import select
 
 class TaskRepository(BaseRepository):
+    def get_task_by_id(self, task_id: int) -> Task | None:
+        return self.db.get(Task, task_id)
+
     def get_task_by_user_id(self, task_id: int, user_id: int) -> Task | None:
         statement = select(Task).where(
             Task.id == task_id, 
@@ -51,3 +54,13 @@ class TaskRepository(BaseRepository):
         self.db.commit()
         self.db.refresh(task_event)
         return task_event
+    
+    def get_task_events_by_task_id(self, task_id: int) -> list[TaskEvent]:
+        statement = select(TaskEvent).where(TaskEvent.task_id == task_id)
+        results = self.db.exec(statement).all()
+        return list(results)
+    
+    def get_task_events_by_user_id(self, user_id: int) -> list[TaskEvent]:
+        statement = select(TaskEvent).where(TaskEvent.author_id == user_id)
+        results = self.db.exec(statement).all()
+        return list(results)
