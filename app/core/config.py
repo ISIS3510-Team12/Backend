@@ -1,12 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from abc import abstractmethod
-from typing import Literal, override
+from typing import Literal
 from functools import lru_cache
-from pathlib import Path
 import os
-import json
-
-BASE_DIR = Path(__file__).resolve().parent
+from sqlalchemy.engine import URL
 
 Environment = Literal["dev", "prod"]
 
@@ -40,13 +36,14 @@ class CoreSettings(BaseSettings):
 
     @property
     def DATABASE_URL(self) -> str:
-        return "postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}".format(
-            user=self.POSTGRES_USER,
+        return URL.create(
+            drivername="postgresql+psycopg2",
+            username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_HOST,
-            port="5432",
-            db=self.POSTGRES_DB,
-        )
+            port=5432,
+            database=self.POSTGRES_DB,
+        ).render_as_string(hide_password=False)
 
     @property
     def FIREBASE_CREDENTIALS_DATA(self) -> FirebaseCredentials:
@@ -82,7 +79,7 @@ class ProdSettings(CoreSettings):
     )
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_settings() -> CoreSettings:
     env = os.getenv("ENV", "dev")
 
