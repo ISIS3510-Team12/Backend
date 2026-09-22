@@ -6,6 +6,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
+import alembic_postgresql_enum
+
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

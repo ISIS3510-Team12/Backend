@@ -1,6 +1,10 @@
 from datetime import datetime
 
+from sqlalchemy import Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
+
+from app.core.consts import EventType, NotificationKind, enum_values
 
 class UserGroup(SQLModel, table=True):
     user_id: str = Field(foreign_key="user.user_id", primary_key=True)
@@ -24,6 +28,9 @@ class User(SQLModel, table=True):
     )
     tasks: list["Task"] = Relationship(
         back_populates="owner",
+    )
+    device_tokens: list["DeviceToken"] = Relationship(
+        back_populates="user",
     )
 
 class UserPreferences(SQLModel, table=True):
@@ -131,10 +138,16 @@ class TimeBlock(SQLModel, table=True):
 class Reminder(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
 
-    kind: str
+    kind: NotificationKind = Field(
+        sa_column=Column(
+            SAEnum(NotificationKind, name="notification_kind", values_callable=enum_values),
+            nullable=False,
+        )
+    )
     scheduled_at: datetime
     sent_at: datetime | None = None
     acted_at: datetime | None = None
+    dismissed_at: datetime | None = None
 
     task_id: int = Field(
         foreign_key="task.id",
@@ -161,10 +174,31 @@ class Attachment(SQLModel, table=True):
         back_populates="attachments",
     )
 
+class DeviceToken(SQLModel, table=True):
+    id: int = Field(primary_key=True, index=True)
+
+    user_id: str = Field(
+        foreign_key="user.user_id",
+        index=True,
+    )
+    token: str = Field(unique=True, index=True)
+    platform: str
+    created_at: datetime
+    last_seen_at: datetime
+
+    user: User = Relationship(
+        back_populates="device_tokens",
+    )
+
 class TaskEvent(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
 
-    event_type: str
+    event_type: EventType = Field(
+        sa_column=Column(
+            SAEnum(EventType, name="event_type", values_callable=enum_values),
+            nullable=False,
+        )
+    )
     occurred_at: datetime
 
     task_id: int = Field(

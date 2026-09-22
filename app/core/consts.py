@@ -1,9 +1,31 @@
+from enum import Enum
+
 STATUS_COMPLETED = "completed"
 STATUS_NOT_STARTED = "not started"
 STATUS_IN_PROGRESS = "in_progress"
 
-EVENT_STARTED = "started"
-EVENT_COMPLETED = "completed"
+
+class EventType(str, Enum):
+    CREATED = "created"
+    STARTED = "started"
+    COMPLETED = "completed"
+    NEEDS_HELP = "needs_help"
+
+
+class NotificationKind(str, Enum):
+    DEADLINE_SOON = "deadline_soon"
+    NEEDS_HELP = "needs_help"
+    PRIORITY = "priority"
+
+
+def enum_values(enum_class: type[Enum]) -> list[str]:
+    values: list[str] = []
+    for member in enum_class:
+        values.append(member.value)
+    return values
+
+
+NOTIFICATION_WINDOW_HOURS = 24
 
 SECONDS_PER_MINUTE = 60
 

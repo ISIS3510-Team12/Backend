@@ -4,8 +4,7 @@ from app.core.consts import (
     BASED_ON_FALLBACK,
     BASED_ON_HISTORY,
     DEFAULT_TASK_DURATION_MINUTES,
-    EVENT_COMPLETED,
-    EVENT_STARTED,
+    EventType,
     SECONDS_PER_MINUTE,
     STATUS_COMPLETED,
 )
@@ -85,12 +84,12 @@ def actual_duration_minutes(db: Session, task: Task) -> int | None:
     completed_at = None
 
     for event in events:
-        if event.event_type == EVENT_STARTED:
+        if event.event_type == EventType.STARTED:
             if started_at is None:
                 started_at = event.occurred_at
             elif event.occurred_at < started_at:
                 started_at = event.occurred_at
-        elif event.event_type == EVENT_COMPLETED:
+        elif event.event_type == EventType.COMPLETED:
             if completed_at is None:
                 completed_at = event.occurred_at
             elif event.occurred_at > completed_at:
