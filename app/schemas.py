@@ -23,6 +23,18 @@ class TaskCreate(BaseModel):
     deadline: datetime
     project_id: int | None = None
     
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "title": "Finish the report",
+                "task_type": "Work",
+                "is_priority": True,
+                "deadline": "2024-06-30T17:00:00Z",
+                "project_id": 1
+            }
+        }
+    }
+    
 class TaskUpdate(BaseModel):
     title: str | None = None
     task_type: str | None = None
