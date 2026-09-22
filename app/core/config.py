@@ -41,7 +41,7 @@ class CoreSettings(BaseSettings):
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_HOST,
-            port=6543,
+            port=5432,
             database=self.POSTGRES_DB,
         ).render_as_string(hide_password=False)
 
