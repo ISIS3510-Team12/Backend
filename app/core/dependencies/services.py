@@ -3,6 +3,7 @@ from fastapi import Depends
 from app.core.dependencies.repositories import UserRepositoryDep, TaskRepositoryDep, GroupRepositoryDep, ProjectRepositoryDep, TaskEventRepositoryDep
 from app.services.user_service import UserService
 from app.services.task_service import TaskService
+from app.services.tasks import TaskInsightsService
 from app.services.group_service import GroupService
 from app.services.project_service import ProjectService
 from app.core.dependencies.external import S3ClientDep
@@ -24,6 +25,16 @@ def get_task_service(
 TaskServiceDep = Annotated[
     TaskService,
     Depends(get_task_service),
+]
+
+def get_task_insights_service(
+    task_repo: TaskRepositoryDep,
+    task_event_repo: TaskEventRepositoryDep) -> TaskInsightsService:
+    return TaskInsightsService(task_repo, task_event_repo)
+
+TaskInsightsServiceDep = Annotated[
+    TaskInsightsService,
+    Depends(get_task_insights_service),
 ]
 
 def get_group_service(repo: GroupRepositoryDep) -> GroupService:

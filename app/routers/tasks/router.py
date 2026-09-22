@@ -2,11 +2,8 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel
 
 from app.core.dependencies.auth import CurrentUser
-from app.core.dependencies.database import DatabaseSession
-from app.core.dependencies.services import TaskServiceDep
-from app.models import Task
+from app.core.dependencies.services import TaskInsightsServiceDep, TaskServiceDep
 from app.schemas import TaskCreate, TaskUpdate
-from app.services.tasks import estimate_task_duration, user_can_access_task
 
 router = APIRouter(
     prefix="/tasks",
@@ -46,12 +43,12 @@ def get_tasks(
 def get_duration_estimate_endpoint(
     task_id: int,
     current_user: CurrentUser,
-    db: DatabaseSession,
+    service: TaskInsightsServiceDep,
 ) -> DurationEstimateResponse:
     """
     Smart feature. It suggests a realistic duration for a task from past activity.
     """
-    task = db.get(Task, task_id)
+    task = service.get_task(task_id)
 
     if task is None:
         raise HTTPException(
@@ -59,13 +56,13 @@ def get_duration_estimate_endpoint(
             detail="Task not found",
         )
 
-    if not user_can_access_task(db, task, current_user):
+    if not service.user_can_access_task(task, current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No access to this task",
         )
 
-    estimate = estimate_task_duration(db, task, current_user)
+    estimate = service.estimate_task_duration(task, current_user)
 
     return DurationEstimateResponse(
         task_id=task_id,
