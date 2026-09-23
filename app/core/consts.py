@@ -1,8 +1,17 @@
-from enum import Enum
+from enum import Enum, StrEnum
 
-STATUS_COMPLETED = "completed"
-STATUS_NOT_STARTED = "not started"
-STATUS_IN_PROGRESS = "in_progress"
+
+class TaskStatus(StrEnum):
+    COMPLETED = "completed"
+    NOT_STARTED = "not started"
+    IN_PROGRESS = "in_progress"
+
+
+class TaskEventType(StrEnum):
+    CREATED = "created"
+    VIEWED = "viewed"
+    UPDATED = "updated"
+    DELETED = "deleted"
 
 
 class EventType(str, Enum):

@@ -4,7 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.core.consts import EventType, NotificationKind, enum_values
+from app.core.consts import NotificationKind, TaskEventType, TaskStatus, enum_values
 
 class UserGroup(SQLModel, table=True):
     user_id: str = Field(foreign_key="user.user_id", primary_key=True)
@@ -31,6 +31,9 @@ class User(SQLModel, table=True):
     )
     device_tokens: list["DeviceToken"] = Relationship(
         back_populates="user",
+    )
+    taskEvents: list["TaskEvent"] = Relationship(
+        back_populates="author",
     )
 
 class UserPreferences(SQLModel, table=True):
@@ -79,7 +82,7 @@ class Task(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
     title: str
     task_type: str
-    status: str
+    status: TaskStatus
     is_priority: bool = False
     needs_help: bool = False
     deadline: datetime | None = None
@@ -193,12 +196,7 @@ class DeviceToken(SQLModel, table=True):
 class TaskEvent(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
 
-    event_type: EventType = Field(
-        sa_column=Column(
-            SAEnum(EventType, name="event_type", values_callable=enum_values),
-            nullable=False,
-        )
-    )
+    event_type: TaskEventType
     occurred_at: datetime
 
     task_id: int = Field(
@@ -208,4 +206,13 @@ class TaskEvent(SQLModel, table=True):
 
     task: Task = Relationship(
         back_populates="events",
+    )
+    
+    author_id: str = Field(
+        foreign_key="user.user_id",
+        index=True,
+    )
+    
+    author: User = Relationship(
+        back_populates="taskEvents",
     )

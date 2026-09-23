@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
+from app.core.consts import TaskStatus
 
 class UserCreate(BaseModel):
     first_name: str
@@ -42,3 +43,4 @@ class TaskUpdate(BaseModel):
     is_priority: str | None = None
     deadline: datetime | None = None
     project_id: int | None = None
+    status: TaskStatus | None = None
