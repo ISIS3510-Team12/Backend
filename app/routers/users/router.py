@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 from fastapi import APIRouter, HTTPException, status
 from app.core.dependencies.auth import FirebaseUser, CurrentUser
 from app.models import User
@@ -32,7 +32,6 @@ def create_user(
             email=email,
             first_name=request.first_name,
             last_name=request.last_name,
-            major=request.major,
             auth_provider=auth_provider,
             last_active_at=datetime.now(UTC),
         )
@@ -43,7 +42,7 @@ def create_user(
 @router.get(
     "/current_user",
 )
-def get_current_user(current_user: CurrentUser):
+def get_current_user(current_user: CurrentUser, service: UserServiceDep) -> User:
     """
     Get the current authenticated application user.
     """
