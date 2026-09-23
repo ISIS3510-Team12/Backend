@@ -10,6 +10,7 @@ RUN uv sync --frozen --no-cache
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app/ app/
+COPY justfile ./justfile
 
 EXPOSE 8000
 

@@ -43,7 +43,7 @@ def get_firebase_user_from_token(
 def get_current_user(
     firebase_user: FirebaseUser,
     db: DatabaseSession,
-) -> dict[str, str]:
+) -> User:
     user = db.get(User, firebase_user["uid"])
 
     if user is None:
@@ -51,7 +51,7 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Application user does not exist",
         )
-    return { "user_id": user.user_id }
+    return user
 
 FirebaseUser = Annotated[
     dict[str, Any],
