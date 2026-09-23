@@ -12,7 +12,6 @@ class User(SQLModel, table=True):
     first_name: str
     last_name: str
     email: str
-    major: str
     auth_provider: str
     last_active_at: datetime
     
