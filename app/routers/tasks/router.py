@@ -22,7 +22,7 @@ def get_tasks(
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
-    return service.get_tasks(current_user.user_id)
+    return service.get_tasks_by_user(current_user.user_id)
 
 @router.get("/{task_id}", status_code=status.HTTP_200_OK)
 def get_task(
@@ -30,7 +30,7 @@ def get_task(
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
-    return service.get_task(task_id, current_user.user_id)
+    return service.get_task_by_user(task_id, current_user.user_id)
 
 @router.patch("/{task_id}", status_code=status.HTTP_200_OK)
 def update_task(
