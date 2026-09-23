@@ -2,14 +2,14 @@ from fastapi import APIRouter, Response, status
 
 from app.core.dependencies.auth import CurrentUser
 from app.core.dependencies.services import TaskServiceDep
-from app.schemas import TaskCreate
+from app.schemas import TaskCreate, TaskResponse
 
 router = APIRouter(
     prefix="/tasks",
     tags=["tasks"]
 )
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(
     data: TaskCreate,
     current_user: CurrentUser,
@@ -17,22 +17,22 @@ def create_task(
 ):
     return service.create_task(current_user.user_id, data)
 
-@router.get("", status_code=status.HTTP_200_OK)
-def get_tasks(
+@router.get("", response_model=list[TaskResponse], status_code=status.HTTP_200_OK)
+def get_tasks_by_user(
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
-    return service.get_tasks(current_user.user_id)
+    return service.get_tasks_by_user(current_user.user_id)
 
-@router.get("/{task_id}", status_code=status.HTTP_200_OK)
-def get_task(
+@router.get("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
+def get_task_by_user(
     task_id: int,
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
-    return service.get_task(task_id, current_user.user_id)
+    return service.get_task_by_user(task_id, current_user.user_id)
 
-@router.patch("/{task_id}", status_code=status.HTTP_200_OK)
+@router.patch("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def update_task(
     task_id: int,
     data: TaskCreate,
