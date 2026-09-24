@@ -14,6 +14,11 @@ class UserUpdate(BaseModel):
 
 class UserPreferencesUpdate(BaseModel):
     push_enabled: bool | None = None
+
+class UserResponse(BaseModel):
+    user_id: str
+    first_name: str
+    last_name: str
     
 class TaskCreate(BaseModel):
     title: str
@@ -50,3 +55,25 @@ class TaskResponse(BaseModel):
     is_priority: bool = False
     needs_help: bool = False
     deadline: datetime | None = None
+
+class GroupCreate(BaseModel):
+    name: str
+    description: str
+    deadline: datetime
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Group name #1",
+                "description": "Course project group",
+                "deadline": "2026-10-30T23:59:00Z"
+            }
+        }
+    }
+
+class GroupResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    deadline: datetime
+    users: list[UserResponse]
