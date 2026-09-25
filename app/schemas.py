@@ -40,7 +40,6 @@ class TaskUpdate(BaseModel):
     is_priority: str | None = None
     deadline: datetime | None = None
     project_id: int | None = None
-    status: TaskStatus | None = None
 
 class TaskResponse(BaseModel):
     id: int

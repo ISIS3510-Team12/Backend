@@ -41,6 +41,15 @@ def update_task(
 ):
     return service.update_task(task_id, current_user.user_id, data)
 
+@router.patch("/{task_id}/status", response_model=TaskResponse, status_code=status.HTTP_200_OK)
+def change_task_status(
+    task_id: int,
+    status: str,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.change_task_status(task_id, current_user.user_id, status)
+
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(
     task_id: int,

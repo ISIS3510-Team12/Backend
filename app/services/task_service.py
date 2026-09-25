@@ -100,6 +100,23 @@ class TaskService:
         self.repository.register_task_event(task_event)
         
         return updated_task
+    
+    def change_task_status(self, task_id: int, user_id: int, new_status: TaskStatus) -> Task:
+        task = self.get_task(task_id, user_id)
+        old_status = task.status
+        
+        updated_task = self.repository.update_task(task, {"status": new_status})
+        
+        if old_status != new_status:
+            task_event = TaskEvent(
+                event_type=TaskEventType.STATUS_CHANGED,
+                occurred_at=datetime.now(),
+                task_id=updated_task.id,
+                author_id=user_id,
+            )
+            self.repository.register_task_event(task_event)
+        
+        return updated_task
 
     def delete_task(self, task_id: int, user_id: int) -> None:
         task = self.get_task(task_id, user_id)
