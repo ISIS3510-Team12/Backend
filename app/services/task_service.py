@@ -34,6 +34,7 @@ class TaskService:
         
         task_event = TaskEvent(
             event_type=TaskEventType.CREATED,
+            task_status=task.status,
             occurred_at=datetime.now(),
             task_id=created_task.id,
             author_id=user_id,
@@ -51,6 +52,7 @@ class TaskService:
             raise TaskNotFoundException(task_id)
         task_event = TaskEvent(
             event_type=TaskEventType.VIEWED,
+            task_status=task.status,
             occurred_at=datetime.now(),
             task_id=task_id,
             author_id=user_id,
@@ -74,6 +76,7 @@ class TaskService:
             raise TaskNotFoundException(task_id)
         task_event = TaskEvent(
             event_type=TaskEventType.VIEWED,
+            task_status=task.status,
             occurred_at=datetime.now(),
             task_id=task_id,
             author_id=user_id,
@@ -93,6 +96,7 @@ class TaskService:
         
         task_event = TaskEvent(
             event_type=TaskEventType.UPDATED,
+            task_status=task.status,
             occurred_at=datetime.now(),
             task_id=updated_task.id,
             author_id=user_id,
@@ -110,6 +114,7 @@ class TaskService:
         if old_status != new_status:
             task_event = TaskEvent(
                 event_type=TaskEventType.STATUS_CHANGED,
+                task_status=new_status,
                 occurred_at=datetime.now(),
                 task_id=updated_task.id,
                 author_id=user_id,
@@ -123,6 +128,7 @@ class TaskService:
         self.repository.delete_task(task)
         task_event = TaskEvent(
             event_type=TaskEventType.DELETED,
+            task_status=task.status,
             occurred_at=datetime.now(),
             task_id=task_id,
             author_id=user_id,

@@ -168,6 +168,7 @@ class TaskEvent(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
 
     event_type: TaskEventType
+    task_status: TaskStatus
     occurred_at: datetime
 
     task_id: int = Field(
