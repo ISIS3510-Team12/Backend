@@ -24,25 +24,28 @@ class TaskCreate(BaseModel):
     title: str
     task_type: str
     is_priority: bool = False
+    needs_help: bool = False
     deadline: datetime
     project_id: int | None = None
-    
+
     model_config = {
         "json_schema_extra": {
             "example": {
                 "title": "Finish the report",
                 "task_type": "Work",
                 "is_priority": True,
+                "needs_help": False,
                 "deadline": "2024-06-30T17:00:00Z",
                 "project_id": 1
             }
         }
     }
-    
+
 class TaskUpdate(BaseModel):
     title: str | None = None
     task_type: str | None = None
-    is_priority: str | None = None
+    is_priority: bool | None = None
+    needs_help: bool | None = None
     deadline: datetime | None = None
     project_id: int | None = None
 
@@ -76,3 +79,22 @@ class GroupResponse(BaseModel):
     description: str
     deadline: datetime
     users: list[UserResponse]
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: str
+    deadline: datetime
+    group_id: int
+
+class ProjectUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    deadline: datetime | None = None
+    group_id: int | None = None
+
+class ProjectResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    deadline: datetime
+    group_id: int

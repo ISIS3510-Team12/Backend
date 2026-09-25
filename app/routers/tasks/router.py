@@ -2,7 +2,7 @@ from fastapi import APIRouter, Response, status
 
 from app.core.dependencies.auth import CurrentUser
 from app.core.dependencies.services import TaskServiceDep
-from app.schemas import TaskCreate, TaskResponse
+from app.schemas import TaskCreate, TaskUpdate, TaskResponse
 
 router = APIRouter(
     prefix="/tasks",
@@ -35,7 +35,7 @@ def get_task_by_user(
 @router.patch("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def update_task(
     task_id: int,
-    data: TaskCreate,
+    data: TaskUpdate,
     current_user: CurrentUser,
     service: TaskServiceDep
 ):

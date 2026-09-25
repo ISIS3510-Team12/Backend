@@ -26,6 +26,7 @@ class TaskService:
             task_type=data.task_type,
             status=TaskStatus.NOT_STARTED,
             is_priority=data.is_priority,
+            needs_help=data.needs_help,
             deadline=data.deadline,
             user_id=user_id,
             project_id=data.project_id
@@ -85,14 +86,14 @@ class TaskService:
         return task
     
     def update_task(self, task_id: int, user_id: int, data: TaskUpdate) -> Task:
-        task = self.get_task(task_id, user_id)
-        
+        task = self.get_task_by_user(task_id, user_id)
+
         if data.project_id is not None:
             project = self.project_repository.get_project_by_id(data.project_id)
             if project is None:
                 raise ProjectNotFoundException(data.project_id)
-        
-        updated_task = self.repository.update_task(task, data)
+
+        updated_task = self.repository.update_task(task, data.model_dump(exclude_unset=True))
         
         task_event = TaskEvent(
             event_type=TaskEventType.UPDATED,
@@ -106,7 +107,8 @@ class TaskService:
         return updated_task
     
     def change_task_status(self, task_id: int, user_id: int, new_status: TaskStatus) -> Task:
-        task = self.get_task(task_id, user_id)
+        new_status = TaskStatus(new_status)
+        task = self.get_task_by_user(task_id, user_id)
         old_status = task.status
         
         updated_task = self.repository.update_task(task, {"status": new_status})
@@ -124,7 +126,7 @@ class TaskService:
         return updated_task
 
     def delete_task(self, task_id: int, user_id: int) -> None:
-        task = self.get_task(task_id, user_id)
+        task = self.get_task_by_user(task_id, user_id)
         self.repository.delete_task(task)
         task_event = TaskEvent(
             event_type=TaskEventType.DELETED,
