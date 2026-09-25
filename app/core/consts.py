@@ -9,6 +9,7 @@ class TaskEventType(StrEnum):
     CREATED = "created"
     VIEWED = "viewed"
     UPDATED = "updated"
+    STATUS_CHANGED = "status_changed"
     DELETED = "deleted"
 
 EVENT_STARTED = "started"
