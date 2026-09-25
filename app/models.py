@@ -86,7 +86,8 @@ class Task(SQLModel, table=True):
         index=True,
     )
 
-    project_id: int = Field(
+    project_id: int | None = Field(
+        default=None,
         foreign_key="project.id",
         index=True,
     )

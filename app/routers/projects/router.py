@@ -1,10 +1,3 @@
-from fastapi import APIRouter
-
-router = APIRouter(
-    prefix="/projects",
-    tags=["projects"]
-)
-
 from fastapi import APIRouter, Response, status
 
 from app.core.dependencies.auth import CurrentUser
