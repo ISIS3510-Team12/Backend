@@ -5,7 +5,17 @@ from sqlmodel import Field, Relationship, SQLModel
 
 class UserGroup(SQLModel, table=True):
     user_id: str = Field(foreign_key="user.user_id", primary_key=True)
+
+    
     group_id: int = Field(foreign_key="group.id", primary_key=True)
+
+class TaskAssignee(SQLModel, table=True):
+    task_id: int = Field(foreign_key="task.id", primary_key=True)
+    user_id: str = Field(foreign_key="user.user_id", primary_key=True)
+
+class TaskRelation(SQLModel, table=True):
+    task_id: int = Field(foreign_key="task.id", primary_key=True)
+    related_task_id: int = Field(foreign_key="task.id", primary_key=True)
 
 class User(SQLModel, table=True):
     user_id: str = Field(primary_key=True, index=True)
@@ -24,6 +34,10 @@ class User(SQLModel, table=True):
     )
     tasks: list["Task"] = Relationship(
         back_populates="owner",
+    )
+    assigned_tasks: list["Task"] = Relationship(
+        back_populates="assignees",
+        link_model=TaskAssignee,
     )
     taskEvents: list["TaskEvent"] = Relationship(
         back_populates="author",
@@ -74,13 +88,14 @@ class Project(SQLModel, table=True):
 class Task(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
     title: str
+    description: str | None = None
     task_type: str
     status: TaskStatus
     is_priority: bool = False
     needs_help: bool = False
     deadline: datetime | None = None
 
-    # Owner
+    # Owner (creator)
     user_id: str = Field(
         foreign_key="user.user_id",
         index=True,
@@ -98,6 +113,31 @@ class Task(SQLModel, table=True):
 
     project: Project = Relationship(
         back_populates="tasks",
+    )
+
+    # People assigned to the task
+    assignees: list[User] = Relationship(
+        back_populates="assigned_tasks",
+        link_model=TaskAssignee,
+    )
+
+    # Related tasks / subtasks
+    related_tasks: list["Task"] = Relationship(
+        back_populates="related_from",
+        link_model=TaskRelation,
+        sa_relationship_kwargs=dict(
+            primaryjoin="Task.id==TaskRelation.task_id",
+            secondaryjoin="Task.id==TaskRelation.related_task_id",
+        ),
+    )
+
+    related_from: list["Task"] = Relationship(
+        back_populates="related_tasks",
+        link_model=TaskRelation,
+        sa_relationship_kwargs=dict(
+            primaryjoin="Task.id==TaskRelation.related_task_id",
+            secondaryjoin="Task.id==TaskRelation.task_id",
+        ),
     )
 
     # Related entities
@@ -135,8 +175,8 @@ class TimeBlock(SQLModel, table=True):
 class Reminder(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
 
-    kind: str
     scheduled_at: datetime
+    enabled: bool = True
     sent_at: datetime | None = None
     acted_at: datetime | None = None
 
