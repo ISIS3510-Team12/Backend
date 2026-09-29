@@ -8,11 +8,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
       interval: 5s
       timeout: 5s
       retries: 10
-    
+
   s3:
     image: eniz1806/vaults3:latest
     env_file:
@@ -31,12 +31,17 @@ services:
     build: .
     env_file:
       - .env.dev
+    environment:
+      # Reach the Firebase Auth emulator running on localhost. 
+      FIREBASE_AUTH_EMULATOR_HOST: ${FIREBASE_AUTH_EMULATOR_HOST:-host.docker.internal:9099}
     ports:
       - "8000:8000"
     volumes:
       - ./app:/app/app
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
