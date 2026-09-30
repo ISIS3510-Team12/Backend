@@ -13,6 +13,7 @@ from app.models import (
     UserGroup,
 )
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 from sqlmodel import delete, select
 
 class TaskRepository(BaseRepository):
@@ -37,6 +38,7 @@ class TaskRepository(BaseRepository):
         )
         statement = (
             select(Task)
+            .options(selectinload(Task.project)) # Helps avoid N+1 queries when accessing the task's project
             .outerjoin(Project, Task.project_id == Project.id)
             .where(
                 Task.id == task_id,
@@ -49,13 +51,44 @@ class TaskRepository(BaseRepository):
         )
         return self.db.exec(statement).first()
 
+    def get_accessible_task_ids(self, task_ids: list[int], user_id: str) -> set[int]:
+        if not task_ids:
+            return set()
+        assigned_task_ids = select(TaskAssignee.task_id).where(
+            TaskAssignee.user_id == user_id
+        )
+        user_group_ids = select(UserGroup.group_id).where(
+            UserGroup.user_id == user_id
+        )
+        statement = (
+            select(Task.id)
+            .outerjoin(Project, Task.project_id == Project.id) #Outer join because some tasks may not have a project (and thus no group)
+            .where(
+                Task.id.in_(task_ids),
+                or_(
+                    Task.user_id == user_id,
+                    Task.id.in_(assigned_task_ids),
+                    Project.group_id.in_(user_group_ids),
+                ),
+            )
+        )
+        return set(self.db.exec(statement).all())
+
     def get_all_tasks_by_user(self, user_id: int) -> list[Task]:
-        statement = select(Task).where(Task.user_id == user_id)
+        statement = (
+            select(Task)
+            .options(selectinload(Task.project))
+            .where(Task.user_id == user_id)
+        )
         results = self.db.exec(statement).all()
         return list(results)
 
     def get_all_tasks_by_project(self, project_id: int) -> list[Task]:
-        statement = select(Task).where(Task.project_id == project_id)
+        statement = (
+            select(Task)
+            .options(selectinload(Task.project))
+            .where(Task.project_id == project_id)
+        )
         results = self.db.exec(statement)
         return results.all()
 
@@ -66,6 +99,7 @@ class TaskRepository(BaseRepository):
         )
         statement = (
             select(Task)
+            .options(selectinload(Task.project))
             .join(Project, Task.project_id == Project.id)
             .where(
                 Project.group_id == group_id,
@@ -82,6 +116,7 @@ class TaskRepository(BaseRepository):
         )
         statement = (
             select(Task)
+            .options(selectinload(Task.project))
             .join(Project, Task.project_id == Project.id)
             .where(
                 Project.group_id == group_id,
@@ -96,6 +131,7 @@ class TaskRepository(BaseRepository):
         """Every task in any group the user belongs to (no ownership/group filter)."""
         statement = (
             select(Task)
+            .options(selectinload(Task.project))
             .join(Project, Task.project_id == Project.id)
             .join(UserGroup, UserGroup.group_id == Project.group_id)
             .where(UserGroup.user_id == user_id)
@@ -103,9 +139,13 @@ class TaskRepository(BaseRepository):
         return list(self.db.exec(statement).all())
 
     def get_task_by_project(self, task_id: int, project_id: int):
-        statement = select(Task).where(
-            Task.id == task_id,
-            Task.project_id == project_id
+        statement = (
+            select(Task)
+            .options(selectinload(Task.project))
+            .where(
+                Task.id == task_id,
+                Task.project_id == project_id
+            )
         )
         return self.db.exec(statement).first()
     
@@ -133,16 +173,20 @@ class TaskRepository(BaseRepository):
     def replace_assignees(self, task: Task, user_ids: list[str]) -> None:
         """Replace the task's assignees with the given user ids."""
         self.db.exec(delete(TaskAssignee).where(TaskAssignee.task_id == task.id))
+        rows: list[TaskAssignee] = []
         for user_id in user_ids:
-            self.db.add(TaskAssignee(task_id=task.id, user_id=user_id))
+            rows.append(TaskAssignee(task_id=task.id, user_id=user_id))
+        self.db.add_all(rows)
         self.db.commit()
         self.db.refresh(task)
 
     def replace_related_tasks(self, task: Task, related_task_ids: list[int]) -> None:
         """Replace the task's related tasks with the given task ids."""
         self.db.exec(delete(TaskRelation).where(TaskRelation.task_id == task.id))
+        rows: list[TaskRelation] = []
         for related_task_id in related_task_ids:
-            self.db.add(TaskRelation(task_id=task.id, related_task_id=related_task_id))
+            rows.append(TaskRelation(task_id=task.id, related_task_id=related_task_id))
+        self.db.add_all(rows)
         self.db.commit()
         self.db.refresh(task)
 

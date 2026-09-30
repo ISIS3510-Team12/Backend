@@ -58,23 +58,27 @@ class TaskService:
         )
         self.repository.register_task_event(task_event)
 
-    def _validate_assignees(self, user_ids: list[str]) -> None:
+    def validate_assignees(self, user_ids: list[str]) -> None:
+        existing_ids = self.user_repository.get_existing_ids(user_ids)
         for user_id in user_ids:
-            if self.user_repository.get_by_id(user_id) is None:
+            if user_id not in existing_ids:
                 raise UserNotFoundException(user_id)
 
-    def _validate_related_tasks(self, task: Task, related_task_ids: list[int]) -> None:
+    def validate_related_tasks(self, task: Task, related_task_ids: list[int]) -> None:
+        accessible_ids = self.repository.get_accessible_task_ids(
+            related_task_ids, task.user_id
+        )
         for related_id in related_task_ids:
-            if self.repository.get_task_by_user_id(related_id, task.user_id) is None:
+            if related_id not in accessible_ids:
                 raise TaskNotFoundException(related_id)
 
-    def _apply_relationships(self, task: Task, data: TaskCreate | TaskUpdate) -> None:
+    def apply_relationships(self, task: Task, data: TaskCreate | TaskUpdate) -> None:
         """Persist assignees / related tasks when the request provided them."""
         provided = data.model_dump(exclude_unset=True)
 
         if "assignee_ids" in provided:
             assignee_ids = provided.get("assignee_ids") or []
-            self._validate_assignees(assignee_ids)
+            self.validate_assignees(assignee_ids)
             self.repository.replace_assignees(task, assignee_ids)
 
         if "related_task_ids" in provided:
@@ -82,7 +86,7 @@ class TaskService:
             for related_id in provided.get("related_task_ids") or []:
                 if related_id != task.id:
                     related_ids.append(related_id)
-            self._validate_related_tasks(task, related_ids)
+            self.validate_related_tasks(task, related_ids)
             self.repository.replace_related_tasks(task, related_ids)
 
     def create_task(self, user_id: int, data: TaskCreate) -> TaskResponse:
@@ -106,7 +110,7 @@ class TaskService:
         )
         created_task = self.repository.create_task(task)
 
-        self._apply_relationships(created_task, data)
+        self.apply_relationships(created_task, data)
 
         self.register_event(
             TaskEventType.CREATED, created_task.status, created_task.id, user_id
@@ -183,7 +187,7 @@ class TaskService:
         fields = data.model_dump(exclude_unset=True, exclude={"assignee_ids", "related_task_ids"})
         updated_task = self.repository.update_task(task, fields)
 
-        self._apply_relationships(updated_task, data)
+        self.apply_relationships(updated_task, data)
 
         self.register_event(
             TaskEventType.UPDATED, updated_task.status, updated_task.id, user_id
