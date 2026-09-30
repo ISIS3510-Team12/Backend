@@ -37,6 +37,20 @@ class ReminderResponse(BaseModel):
     # Humanised offset from the owning task's deadline
     label: str | None = None
 
+class TimeBlockCreate(BaseModel):
+    start_at: datetime
+    end_at: datetime
+
+class TimeBlockUpdate(BaseModel):
+    start_at: datetime | None = None
+    end_at: datetime | None = None
+
+class TimeBlockResponse(BaseModel):
+    id: int
+    start_at: datetime
+    end_at: datetime
+    task_id: int
+
 class TaskCreate(BaseModel):
     title: str
     task_type: str
@@ -119,6 +133,7 @@ class GroupResponse(BaseModel):
     description: str
     deadline: datetime
     users: list[UserResponse]
+    pending_task_count: int = 0
 
 class ProjectCreate(BaseModel):
     name: str

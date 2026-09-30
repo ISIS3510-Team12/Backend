@@ -1,6 +1,8 @@
-import select
+from sqlalchemy import func
+from sqlmodel import select
 from . import BaseRepository
-from app.models import Group, User, Project, UserGroup
+from app.core.consts import TaskStatus
+from app.models import Group, Project, Task, User, UserGroup
 
 class GroupRepository(BaseRepository):
     
@@ -24,7 +26,7 @@ class GroupRepository(BaseRepository):
         self.db.commit()
         
     def get_group_by_id(self, group_id:int, user_id: int) -> Group|None:
-        # TODO: check if user can access this project
+        # TODO: check if user can access this group
         return self.db.get(Group, group_id)
     
     def search_groups_by_name(self, name: str) -> list[Group]:
@@ -38,27 +40,29 @@ class GroupRepository(BaseRepository):
             return user.groups
         return []
     
-    def get_projects_by_group_id(self, group_id: int)-> list[Project]:
-        projects = select(Project).where(Project.group_id == group_id)
-        results = self.db.exec(projects).all
+    def get_projects_by_group_id(self, group_id: int) -> list[Project]:
+        statement = select(Project).where(Project.group_id == group_id)
+        results = self.db.exec(statement).all()
         return list(results)
     
-    def add_user_to_group(self, user_id: str, group_id: int)-> UserGroup:
-        user_group = UserGroup(user_id=user_id,group_id=group_id)
+    def count_pending_tasks_by_group(self) -> dict[int, int]:
+        """Count incomplete tasks per group in a single query (group_id -> count)."""
+        statement = (
+            select(Project.group_id, func.count(Task.id))
+            .join(Task, Task.project_id == Project.id)
+            .where(Task.status != TaskStatus.COMPLETED)
+            .group_by(Project.group_id)
+        )
+        results = self.db.exec(statement).all()
+
+        counts: dict[int, int] = {}
+        for group_id, count in results:
+            counts[group_id] = count
+        return counts
+
+    def add_user_to_group(self, user_id: str, group_id: int) -> UserGroup:
+        user_group = UserGroup(user_id=user_id, group_id=group_id)
         self.db.add(user_group)
-        self.commit()
+        self.db.commit()
         self.db.refresh(user_group)
-        
         return user_group
-    
-    def add_user_to_group(self, user_id: str, group_id: int)-> None:    
-        statement = select(UserGroup).where(UserGroup.user_id == user_id, UserGroup.group_id == group_id)
-        user_group = self.db.exec(statement).first()
-        self.db.delete(user_group)
-        self.commit()
-    
-                
-    
-
-    
-

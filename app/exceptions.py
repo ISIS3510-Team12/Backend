@@ -70,3 +70,19 @@ class ProjectNotFoundException(BaseHTTPException):
     def __init__(self, project_id: int):
         message = f"Project with ID {project_id} not found."
         super().__init__(status_code=404, message=message)
+
+class ReminderNotFoundException(BaseHTTPException):
+    """
+    Exception raised when a reminder is not found for a task.
+    """
+    def __init__(self, reminder_id: int):
+        message = f"Reminder with ID {reminder_id} not found."
+        super().__init__(status_code=404, message=message)
+
+class TimeBlockNotFoundException(BaseHTTPException):
+    """
+    Exception raised when a time block is not found for a task.
+    """
+    def __init__(self, time_block_id: int):
+        message = f"Time block with ID {time_block_id} not found."
+        super().__init__(status_code=404, message=message)

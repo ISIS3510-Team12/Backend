@@ -1,7 +1,15 @@
 from datetime import datetime
 
-from app.models import Reminder, Task, User
-from app.schemas import ReminderResponse, TaskResponse, TaskSummary, UserResponse
+from app.models import Group, Project, Reminder, Task, TimeBlock, User
+from app.schemas import (
+    GroupResponse,
+    ProjectResponse,
+    ReminderResponse,
+    TaskResponse,
+    TaskSummary,
+    TimeBlockResponse,
+    UserResponse,
+)
 
 
 def pluralized(value: int, singular: str, plural: str) -> str:
@@ -105,4 +113,37 @@ def to_task_response(task: Task) -> TaskResponse:
         assignees=assignees,
         related_tasks=related_tasks,
         reminders=reminders,
+    )
+
+
+def to_time_block_response(time_block: TimeBlock) -> TimeBlockResponse:
+    return TimeBlockResponse(
+        id=time_block.id,
+        start_at=time_block.start_at,
+        end_at=time_block.end_at,
+        task_id=time_block.task_id,
+    )
+
+
+def to_group_response(group: Group, pending_task_count: int = 0) -> GroupResponse:
+    users: list[UserResponse] = []
+    for user in group.users:
+        users.append(to_user_response(user))
+    return GroupResponse(
+        id=group.id,
+        name=group.name,
+        description=group.description,
+        deadline=group.deadline,
+        users=users,
+        pending_task_count=pending_task_count,
+    )
+
+
+def to_project_response(project: Project) -> ProjectResponse:
+    return ProjectResponse(
+        id=project.id,
+        name=project.name,
+        description=project.description,
+        deadline=project.deadline,
+        group_id=project.group_id,
     )
