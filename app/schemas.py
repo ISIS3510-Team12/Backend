@@ -108,6 +108,7 @@ class TaskResponse(BaseModel):
     deadline: datetime | None = None
     user_id: str
     project_id: int | None = None
+    group_id: int | None = None
     assignees: list[UserResponse] = []
     related_tasks: list[TaskSummary] = []
     reminders: list[ReminderResponse] = []
