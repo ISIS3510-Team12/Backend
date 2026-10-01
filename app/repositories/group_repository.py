@@ -1,9 +1,25 @@
-from sqlalchemy import func
-from sqlmodel import select
+from sqlalchemy import func, or_
+from sqlmodel import delete, select
 
 from . import BaseRepository
-from app.core.consts import TaskStatus
-from app.models import Group, Project, Task, User, UserGroup
+from app.core.consts import (
+    PERSONAL_GROUP_DESCRIPTION,
+    PERSONAL_GROUP_NAME,
+    TaskStatus,
+)
+from app.models import (
+    Attachment,
+    Group,
+    Project,
+    Reminder,
+    Task,
+    TaskAssignee,
+    TaskEvent,
+    TaskRelation,
+    TimeBlock,
+    User,
+    UserGroup,
+)
 
 
 class GroupRepository(BaseRepository):
@@ -25,7 +41,24 @@ class GroupRepository(BaseRepository):
         return group
 
     def delete_group(self, group: Group) -> None:
-        self.db.delete(group)
+        task_ids = select(Task.id).where(Task.group_id == group.id)
+        self.db.exec(delete(TaskAssignee).where(TaskAssignee.task_id.in_(task_ids)))
+        self.db.exec(
+            delete(TaskRelation).where(
+                or_(
+                    TaskRelation.task_id.in_(task_ids),
+                    TaskRelation.related_task_id.in_(task_ids),
+                )
+            )
+        )
+        self.db.exec(delete(Reminder).where(Reminder.task_id.in_(task_ids)))
+        self.db.exec(delete(TimeBlock).where(TimeBlock.task_id.in_(task_ids)))
+        self.db.exec(delete(Attachment).where(Attachment.task_id.in_(task_ids)))
+        self.db.exec(delete(TaskEvent).where(TaskEvent.task_id.in_(task_ids)))
+        self.db.exec(delete(Task).where(Task.group_id == group.id))
+        self.db.exec(delete(Project).where(Project.group_id == group.id))
+        self.db.exec(delete(UserGroup).where(UserGroup.group_id == group.id))
+        self.db.exec(delete(Group).where(Group.id == group.id))
         self.db.commit()
 
     def get_group_by_id(self, group_id: int, user_id: str) -> Group | None:
@@ -52,8 +85,35 @@ class GroupRepository(BaseRepository):
     def get_groups_by_user_id(self, user_id: str) -> list[Group]:
         user = self.db.get(User, user_id)
         if user:
-            return user.groups
+            return sorted(
+                user.groups,
+                key=lambda group: group.name != PERSONAL_GROUP_NAME,
+            )
         return []
+
+    def get_personal_group(self, user_id: str) -> Group | None:
+        statement = (
+            select(Group)
+            .join(UserGroup, UserGroup.group_id == Group.id)
+            .where(
+                UserGroup.user_id == user_id,
+                Group.name == PERSONAL_GROUP_NAME,
+            )
+        )
+        return self.db.exec(statement).first()
+
+    def get_or_create_personal_group(self, user_id: str) -> Group:
+        group = self.get_personal_group(user_id)
+        if group is not None:
+            return group
+        group = self.create_group(
+            Group(
+                name=PERSONAL_GROUP_NAME,
+                description=PERSONAL_GROUP_DESCRIPTION,
+            )
+        )
+        self.add_user_to_group(user_id, group.id)
+        return group
 
     def get_projects_by_group_id(
         self,
@@ -70,17 +130,14 @@ class GroupRepository(BaseRepository):
         """Count incomplete tasks per group in a single query."""
         statement = (
             select(
-                Project.group_id,
+                Task.group_id,
                 func.count(Task.id)
             )
-            .join(
-                Task,
-                Task.project_id == Project.id
-            )
             .where(
+                Task.group_id.is_not(None),
                 Task.status != TaskStatus.COMPLETED
             )
-            .group_by(Project.group_id)
+            .group_by(Task.group_id)
         )
         results = self.db.exec(statement).all()
         counts: dict[int, int] = {}
@@ -99,6 +156,16 @@ class GroupRepository(BaseRepository):
         self.db.refresh(user_group)
 
         return user_group
+
+    def get_user_by_email(self, email: str) -> User | None:
+        statement = select(User).where(func.lower(User.email) == email.strip().lower())
+        return self.db.exec(statement).first()
+
+    def count_members(self, group_id: int) -> int:
+        statement = select(func.count()).select_from(UserGroup).where(
+            UserGroup.group_id == group_id
+        )
+        return self.db.exec(statement).one()
 
     def remove_user_from_group(self, user_id: str, group_id: int) -> None:
         statement = select(UserGroup).where(

@@ -4,7 +4,6 @@ from . import BaseRepository
 from app.core.consts import AttachmentKind, TaskStatus
 from app.models import (
     Attachment,
-    Project,
     Reminder,
     Task,
     TaskAssignee,
@@ -31,7 +30,7 @@ class TaskRepository(BaseRepository):
 
     def get_task_for_user(self, task_id: int, user_id: str) -> Task | None:
         """A task is accessible if the user owns it, is assigned to it, or
-        belongs to the group its project lives in."""
+        belongs to the group the task lives in."""
         assigned_task_ids = select(TaskAssignee.task_id).where(
             TaskAssignee.user_id == user_id
         )
@@ -41,13 +40,12 @@ class TaskRepository(BaseRepository):
         statement = (
             select(Task)
             .options(selectinload(Task.project), selectinload(Task.attachments))
-            .outerjoin(Project, Task.project_id == Project.id)
             .where(
                 Task.id == task_id,
                 or_(
                     Task.user_id == user_id,
                     Task.id.in_(assigned_task_ids),
-                    Project.group_id.in_(user_group_ids),
+                    Task.group_id.in_(user_group_ids),
                 ),
             )
         )
@@ -64,13 +62,12 @@ class TaskRepository(BaseRepository):
         )
         statement = (
             select(Task.id)
-            .outerjoin(Project, Task.project_id == Project.id) #Outer join because some tasks may not have a project (and thus no group)
             .where(
                 Task.id.in_(task_ids),
                 or_(
                     Task.user_id == user_id,
                     Task.id.in_(assigned_task_ids),
-                    Project.group_id.in_(user_group_ids),
+                    Task.group_id.in_(user_group_ids),
                 ),
             )
         )
@@ -102,9 +99,8 @@ class TaskRepository(BaseRepository):
         statement = (
             select(Task)
             .options(selectinload(Task.project), selectinload(Task.attachments))
-            .join(Project, Task.project_id == Project.id)
             .where(
-                Project.group_id == group_id,
+                Task.group_id == group_id,
                 Task.status != TaskStatus.COMPLETED,
                 or_(Task.user_id == user_id, Task.id.in_(assigned_task_ids)),
             )
@@ -119,9 +115,8 @@ class TaskRepository(BaseRepository):
         statement = (
             select(Task)
             .options(selectinload(Task.project), selectinload(Task.attachments))
-            .join(Project, Task.project_id == Project.id)
             .where(
-                Project.group_id == group_id,
+                Task.group_id == group_id,
                 Task.status != TaskStatus.COMPLETED,
                 Task.user_id != user_id,
                 ~Task.id.in_(assigned_task_ids),
@@ -140,8 +135,7 @@ class TaskRepository(BaseRepository):
         statement = (
             select(Task)
             .options(selectinload(Task.project), selectinload(Task.attachments))
-            .join(Project, Task.project_id == Project.id)
-            .join(UserGroup, UserGroup.group_id == Project.group_id)
+            .join(UserGroup, UserGroup.group_id == Task.group_id)
             .where(UserGroup.user_id == user_id)
         )
 
@@ -195,7 +189,21 @@ class TaskRepository(BaseRepository):
         return task
     
     def delete_task(self, task: Task) -> None:
-        self.db.delete(task)
+        task_id = task.id
+        self.db.exec(delete(TaskAssignee).where(TaskAssignee.task_id == task_id))
+        self.db.exec(
+            delete(TaskRelation).where(
+                or_(
+                    TaskRelation.task_id == task_id,
+                    TaskRelation.related_task_id == task_id,
+                )
+            )
+        )
+        self.db.exec(delete(Reminder).where(Reminder.task_id == task_id))
+        self.db.exec(delete(TimeBlock).where(TimeBlock.task_id == task_id))
+        self.db.exec(delete(Attachment).where(Attachment.task_id == task_id))
+        self.db.exec(delete(TaskEvent).where(TaskEvent.task_id == task_id))
+        self.db.exec(delete(Task).where(Task.id == task_id))
         self.db.commit()
 
     # --- Assignees / related tasks (link tables) -------------------------

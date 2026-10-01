@@ -19,8 +19,9 @@ UserServiceDep = Annotated[
 def get_task_service(
     repo: TaskRepositoryDep,
     project_repo: ProjectRepositoryDep,
-    user_repo: UserRepositoryDep) -> TaskService:
-    return TaskService(repo, project_repo, user_repo)
+    user_repo: UserRepositoryDep,
+    group_repo: GroupRepositoryDep) -> TaskService:
+    return TaskService(repo, project_repo, user_repo, group_repo)
 
 TaskServiceDep = Annotated[
     TaskService,

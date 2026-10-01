@@ -71,6 +71,41 @@ class ProjectNotFoundException(BaseHTTPException):
         message = f"Project with ID {project_id} not found."
         super().__init__(status_code=404, message=message)
 
+class GroupNotFoundException(BaseHTTPException):
+    def __init__(self, group_id: int):
+        message = f"Group with ID {group_id} not found."
+        super().__init__(status_code=404, message=message)
+
+class ProjectGroupMismatchException(BaseHTTPException):
+    def __init__(self, project_id: int, group_id: int):
+        message = f"Project with ID {project_id} does not belong to group {group_id}."
+        super().__init__(status_code=400, message=message)
+
+class PersonalGroupProtectedException(BaseHTTPException):
+    def __init__(self):
+        message = "The personal group cannot be modified or deleted."
+        super().__init__(status_code=403, message=message)
+
+class UserEmailNotFoundException(BaseHTTPException):
+    def __init__(self, email: str):
+        message = f"User with email {email} not found."
+        super().__init__(status_code=404, message=message)
+
+class AlreadyGroupMemberException(BaseHTTPException):
+    def __init__(self, email: str):
+        message = f"User with email {email} is already a member of the group."
+        super().__init__(status_code=409, message=message)
+
+class LastGroupMemberException(BaseHTTPException):
+    def __init__(self):
+        message = "The last member cannot leave the group; delete the group instead."
+        super().__init__(status_code=400, message=message)
+
+class ReservedGroupNameException(BaseHTTPException):
+    def __init__(self, name: str):
+        message = f"The group name '{name}' is reserved."
+        super().__init__(status_code=400, message=message)
+
 class ReminderNotFoundException(BaseHTTPException):
     """
     Exception raised when a reminder is not found for a task.

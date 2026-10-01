@@ -6,10 +6,13 @@ from types_boto3_s3.client import S3Client
 from app.core.config import settings
 from app.core.consts import AttachmentKind, TaskEventType, TaskStatus
 from app.models import Attachment, Reminder, Task, TaskEvent, TimeBlock
+from app.repositories.group_repository import GroupRepository
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
 from app.exceptions import (
+    GroupNotFoundException,
+    ProjectGroupMismatchException,
     ProjectNotFoundException,
     ReminderNotFoundException,
     TaskExistsException,
@@ -36,10 +39,12 @@ class TaskService:
         repository: TaskRepository,
         project_repository: ProjectRepository,
         user_repository: UserRepository,
+        group_repository: GroupRepository,
     ):
         self.repository = repository
         self.project_repository = project_repository
         self.user_repository = user_repository
+        self.group_repository = group_repository
 
     def get_task_or_raise(self, task_id: int, user_id: int) -> Task:
         task = self.repository.get_task_for_user(task_id, user_id)
@@ -101,7 +106,13 @@ class TaskService:
 
         if project is None and data.project_id is not None:
             raise ProjectNotFoundException(data.project_id)
-        
+
+        group = self.group_repository.get_group_by_id(data.group_id, user_id)
+        if group is None:
+            raise GroupNotFoundException(data.group_id)
+        if project is not None and project.group_id != group.id:
+            raise ProjectGroupMismatchException(project.id, group.id)
+
         task = Task(
             title=data.title,
             description=data.description,
@@ -111,7 +122,8 @@ class TaskService:
             needs_help=data.needs_help,
             deadline=data.deadline,
             user_id=user_id,
-            project_id=data.project_id
+            project_id=data.project_id,
+            group_id=group.id,
         )
         created_task = self.repository.create_task(task)
 
@@ -191,6 +203,7 @@ class TaskService:
     def update_task(self, task_id: int, user_id: int, data: TaskUpdate) -> TaskResponse:
         task = self.get_task_or_raise(task_id, user_id)
 
+        project = None
         if data.project_id is not None:
             project = self.project_repository.get_project_by_id(data.project_id, user_id)
             if project is None:
@@ -198,6 +211,8 @@ class TaskService:
 
         # Scalar columns only; relationships are handled separately below.
         fields = data.model_dump(exclude_unset=True, exclude={"assignee_ids", "related_task_ids"})
+        if project is not None:
+            fields["group_id"] = project.group_id
         updated_task = self.repository.update_task(task, fields)
 
         self.apply_relationships(updated_task, data)
@@ -225,7 +240,6 @@ class TaskService:
     def delete_task(self, task_id: int, user_id: int) -> None:
         task = self.get_task_or_raise(task_id, user_id)
         self.repository.delete_task(task)
-        self.register_event(TaskEventType.DELETED, task.status, task_id, user_id)
 
     # --- Reminders -------------------------------------------------------
 

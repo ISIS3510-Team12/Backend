@@ -106,6 +106,11 @@ class Task(SQLModel, table=True):
         index=True,
     )
 
+    group_id: int = Field(
+        foreign_key="group.id",
+        index=True,
+    )
+
     owner: User = Relationship(
         back_populates="tasks",
     )

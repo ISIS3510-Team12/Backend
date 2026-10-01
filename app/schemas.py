@@ -59,6 +59,7 @@ class TaskCreate(BaseModel):
     needs_help: bool = False
     deadline: datetime
     project_id: int | None = None
+    group_id: int
     assignee_ids: list[str] = []
     related_task_ids: list[int] = []
 
@@ -72,6 +73,7 @@ class TaskCreate(BaseModel):
                 "needs_help": False,
                 "deadline": "2024-06-30T17:00:00Z",
                 "project_id": 1,
+                "group_id": 1,
                 "assignee_ids": ["user_123"],
                 "related_task_ids": [2, 3]
             }
@@ -108,7 +110,7 @@ class TaskResponse(BaseModel):
     deadline: datetime | None = None
     user_id: str
     project_id: int | None = None
-    group_id: int | None = None
+    group_id: int
     has_photo: bool = False
     assignees: list[UserResponse] = []
     related_tasks: list[TaskSummary] = []
@@ -131,12 +133,16 @@ class GroupUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     
+class GroupMemberAdd(BaseModel):
+    email: str
+
 class GroupResponse(BaseModel):
     id: int
     name: str
     description: str
     users: list[UserResponse]
     pending_task_count: int = 0
+    is_personal: bool = False
 
 class ProjectCreate(BaseModel):
     name: str
