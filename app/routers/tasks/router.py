@@ -219,7 +219,7 @@ async def replace_task_photo(
     if content_type not in ALLOWED_PHOTO_CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="The photo must be a JPEG, PNG or WebP image.",
+            detail="The photo must be a JPEG, PNG, WebP or HEIC image.",
         )
     content = await file.read(MAX_PHOTO_SIZE_BYTES + 1)
     if len(content) > MAX_PHOTO_SIZE_BYTES:
