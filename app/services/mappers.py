@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.core.consts import PERSONAL_GROUP_NAME, AttachmentKind
 from app.models import Group, Project, Reminder, Task, TimeBlock, User
 from app.schemas import (
     GroupResponse,
@@ -91,10 +92,6 @@ def to_task_response(task: Task) -> TaskResponse:
     for user in task.assignees:
         assignees.append(to_user_response(user))
 
-    group_id = None
-    if task.project is not None:
-        group_id = task.project.group_id
-
     related_tasks: list[TaskSummary] = []
     for related in task.related_tasks:
         related_tasks.append(to_task_summary(related))
@@ -114,7 +111,8 @@ def to_task_response(task: Task) -> TaskResponse:
         deadline=task.deadline,
         user_id=task.user_id,
         project_id=task.project_id,
-        group_id=group_id,
+        group_id=task.group_id,
+        has_photo=any(attachment.kind == AttachmentKind.PHOTO for attachment in task.attachments),
         assignees=assignees,
         related_tasks=related_tasks,
         reminders=reminders,
@@ -140,6 +138,7 @@ def to_group_response(group: Group, pending_task_count: int = 0) -> GroupRespons
         description=group.description,
         users=users,
         pending_task_count=pending_task_count,
+        is_personal=group.name == PERSONAL_GROUP_NAME,
     )
 
 

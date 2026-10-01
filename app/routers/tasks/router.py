@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, File, HTTPException, Response, UploadFile, status
+from fastapi.responses import StreamingResponse
 
+from app.core.consts import ALLOWED_PHOTO_CONTENT_TYPES, MAX_PHOTO_SIZE_BYTES, TaskStatus
 from app.core.dependencies.auth import CurrentUser
+from app.core.dependencies.external import S3ClientDep
 from app.core.dependencies.services import TaskServiceDep
 from app.schemas import (
     ReminderCreate,
@@ -80,7 +83,7 @@ def update_task(
 @router.patch("/{task_id}/status", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def change_task_status(
     task_id: int,
-    status: str,
+    status: TaskStatus,
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
@@ -202,3 +205,45 @@ def delete_time_block(
 ):
     service.delete_time_block(task_id, time_block_id, current_user.user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/{task_id}/photo", status_code=status.HTTP_204_NO_CONTENT)
+def replace_task_photo(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep,
+    s3_client: S3ClientDep,
+    file: UploadFile = File(...),
+):
+    content_type = file.content_type or ""
+    if content_type not in ALLOWED_PHOTO_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="The photo must be a JPEG, PNG, WebP or HEIC image.",
+        )
+    content = file.file.read(MAX_PHOTO_SIZE_BYTES + 1)
+    if len(content) > MAX_PHOTO_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="The photo exceeds the maximum allowed size.",
+        )
+    service.replace_photo(
+        task_id, current_user.user_id, content, content_type, s3_client
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get("/{task_id}/photo", status_code=status.HTTP_200_OK)
+def get_task_photo(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep,
+    s3_client: S3ClientDep,
+):
+    photo = service.get_photo(task_id, current_user.user_id, s3_client)
+    if photo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The task has no photo.",
+        )
+    body, content_type = photo
+    return StreamingResponse(body, media_type=content_type)

@@ -1,6 +1,6 @@
 from app.models import Project
 from app.repositories.project_repository import ProjectRepository
-from app.exceptions import ProjectNotFoundException
+from app.exceptions import GroupNotFoundException, ProjectNotFoundException
 from app.schemas import ProjectCreate, ProjectUpdate
 
 
@@ -13,7 +13,7 @@ class ProjectService:
             data.group_id,
             user_id
         ):
-            raise Exception("User does not belong to this group")
+            raise GroupNotFoundException(data.group_id)
 
         project = Project(
             name=data.name,
@@ -38,7 +38,7 @@ class ProjectService:
             group_id,
             user_id
         ):
-            raise Exception("User does not belong to this group")
+            raise GroupNotFoundException(group_id)
 
         return self.repository.get_projects_by_group(group_id, user_id)
     
@@ -51,10 +51,15 @@ class ProjectService:
         if project is None:
             raise ProjectNotFoundException(project_id)
 
-        return self.repository.update_project(
-            project,
-            data.model_dump(exclude_unset=True)
-        )
+        changes = data.model_dump(exclude_unset=True)
+        new_group_id = changes.get("group_id")
+        if new_group_id is not None and new_group_id != project.group_id:
+            if not self.repository.user_belongs_to_group(new_group_id, user_id):
+                raise GroupNotFoundException(new_group_id)
+
+        updated = self.repository.update_project(project, changes)
+        self.repository.sync_task_groups(updated)
+        return updated
     
     def delete_project(self, project_id: int, user_id: str) -> bool:
         project = self.repository.get_project_by_id(

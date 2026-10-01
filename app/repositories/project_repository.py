@@ -1,4 +1,4 @@
-from sqlmodel import select
+from sqlmodel import select, update
 
 from . import BaseRepository
 from app.models import Project, Task, UserGroup
@@ -75,6 +75,14 @@ class ProjectRepository(BaseRepository):
         self.db.refresh(project)
 
         return project
+
+    def sync_task_groups(self, project: Project) -> None:
+        self.db.exec(
+            update(Task)
+            .where(Task.project_id == project.id)
+            .values(group_id=project.group_id)
+        )
+        self.db.commit()
 
     def delete_project(self, project: Project) -> None:
         self.db.delete(project)
