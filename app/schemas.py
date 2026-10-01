@@ -173,6 +173,19 @@ class ProjectResponse(BaseModel):
     deadline: datetime
     group_id: int
 
+class DeadlinePredictionResponse(BaseModel):
+    """Smart feature: will the project be completed before its deadline?"""
+    project_id: int
+    project_name: str
+    deadline: datetime
+    days_left: float
+    total_tasks: int
+    completed_tasks: int
+    remaining_tasks: int
+    pace_tasks_per_day: float
+    predicted_completion_date: datetime | None = None
+    will_meet_deadline: bool
+
 
 class ScreenLoadEventCreate(BaseModel):
     screen: str

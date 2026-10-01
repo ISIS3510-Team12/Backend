@@ -23,15 +23,4 @@ ALLOWED_PHOTO_CONTENT_TYPES = frozenset(
     {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 )
 
-EVENT_STARTED = "started"
-EVENT_COMPLETED = "completed"
-
-DEFAULT_URGENT_WINDOW_HOURS = 24
-MIN_URGENT_WINDOW_HOURS = 1
-MAX_URGENT_WINDOW_HOURS = 168
-
-SECONDS_PER_MINUTE = 60
-SECONDS_PER_HOUR = 3600
-
-BASED_ON_HISTORY = "historical_events"
-BASED_ON_FALLBACK = "task_estimate"
+SECONDS_PER_DAY = 86400

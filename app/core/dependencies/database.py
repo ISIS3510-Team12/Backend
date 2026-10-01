@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 from typing import Generator
 
-engine = create_engine(settings.DATABASE_URL, echo=True)
+engine = create_engine(settings.sqlalchemy_url, echo=True)
 
 def get_db() -> Generator[Session, None, None]:
     with Session(engine) as session:
