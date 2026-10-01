@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 from fastapi.responses import Response
 
 from app.core.dependencies.auth import CurrentUser
@@ -45,5 +45,27 @@ def get_screen_load_time(service: AnalyticsServiceDep) -> Response:
             "Content-Disposition": (
                 'attachment; filename="screen_load_time.csv"'
             )
+        },
+    )
+
+
+@router.get("/upcoming-tasks-due", status_code=status.HTTP_200_OK)
+def get_upcoming_tasks_due(
+    service: AnalyticsServiceDep,
+    days: int = Query(7, ge=1, le=30),
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "Which upcoming tasks does the user have due in the next week?"
+    It returns a CSV file with one row per user and pending task due in the
+    next `days` days (7 by default).
+    """
+    csv_content = service.upcoming_tasks_due_csv(days)
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="upcoming_tasks_due.csv"'
         },
     )

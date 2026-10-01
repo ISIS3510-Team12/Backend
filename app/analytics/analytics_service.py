@@ -1,7 +1,9 @@
 import csv
+from datetime import datetime
 from io import StringIO
 
 from app.analytics.analytics_repository import AnalyticsRepository
+from app.core.consts import PERSONAL_GROUP_NAME, SECONDS_PER_DAY
 
 
 class AnalyticsService:
@@ -60,6 +62,57 @@ class AnalyticsService:
             writer.writerow([
                 row.screen,
                 round(float(row.average_load_time_ms), 2),
+            ])
+
+        return buffer.getvalue()
+
+    def upcoming_tasks_due_csv(self, days: int) -> str:
+        now = datetime.now()
+        rows = self.repository.get_upcoming_tasks_due(now, days)
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+
+        writer.writerow([
+            "user_id",
+            "user_role",
+            "task_id",
+            "task_title",
+            "task_type",
+            "status",
+            "is_priority",
+            "needs_help",
+            "deadline",
+            "hours_until_due",
+            "days_until_due",
+            "group_id",
+            "group_name",
+            "is_personal_group",
+            "project_id",
+            "project_name",
+            "generated_at",
+        ])
+
+        for row in rows:
+            days_until_due = (row.deadline - now).total_seconds() / SECONDS_PER_DAY
+            writer.writerow([
+                row.user_id,
+                row.user_role,
+                row.task_id,
+                row.task_title,
+                row.task_type,
+                row.task_status.value,
+                row.is_priority,
+                row.needs_help,
+                row.deadline.isoformat(),
+                round(days_until_due * 24, 2),
+                round(days_until_due, 2),
+                row.group_id,
+                row.group_name,
+                row.group_name == PERSONAL_GROUP_NAME,
+                row.project_id,
+                row.project_name,
+                now.isoformat(),
             ])
 
         return buffer.getvalue()
