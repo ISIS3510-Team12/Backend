@@ -208,7 +208,7 @@ def delete_time_block(
 
 
 @router.put("/{task_id}/photo", status_code=status.HTTP_204_NO_CONTENT)
-async def replace_task_photo(
+def replace_task_photo(
     task_id: int,
     current_user: CurrentUser,
     service: TaskServiceDep,
@@ -221,7 +221,7 @@ async def replace_task_photo(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="The photo must be a JPEG, PNG, WebP or HEIC image.",
         )
-    content = await file.read(MAX_PHOTO_SIZE_BYTES + 1)
+    content = file.file.read(MAX_PHOTO_SIZE_BYTES + 1)
     if len(content) > MAX_PHOTO_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
