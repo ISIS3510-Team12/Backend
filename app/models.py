@@ -61,7 +61,6 @@ class Group(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
     name: str
     description: str
-    deadline: datetime
     
     users: list[User] = Relationship(
         back_populates="groups",

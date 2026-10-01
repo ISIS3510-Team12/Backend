@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Response, status
 from app.core.dependencies.auth import CurrentUser
 from app.core.dependencies.services import GroupServiceDep
-from app.schemas import GroupCreate, GroupResponse
+from app.schemas import GroupCreate, GroupResponse, GroupUpdate
 
 router = APIRouter(
     prefix="/groups",
@@ -24,7 +24,7 @@ def get_group_by_user(group_id: int, current_user: CurrentUser, service: GroupSe
 
 
 @router.patch("/{group_id}", response_model=GroupResponse, status_code=status.HTTP_200_OK)
-def update_group(group_id: int, data: GroupCreate, current_user: CurrentUser, service: GroupServiceDep):
+def update_group(group_id: int, data: GroupUpdate, current_user: CurrentUser, service: GroupServiceDep):
     return service.update_group(group_id, current_user.user_id, data)
 
 

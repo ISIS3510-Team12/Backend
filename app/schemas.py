@@ -117,23 +117,24 @@ class TaskResponse(BaseModel):
 class GroupCreate(BaseModel):
     name: str
     description: str
-    deadline: datetime
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "name": "Group name #1",
-                "description": "Course project group",
-                "deadline": "2026-10-30T23:59:00Z"
+                "description": "Course project group"
             }
         }
     }
 
+class GroupUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    
 class GroupResponse(BaseModel):
     id: int
     name: str
     description: str
-    deadline: datetime
     users: list[UserResponse]
     pending_task_count: int = 0
 

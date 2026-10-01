@@ -12,9 +12,38 @@ router = APIRouter(
 
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 def create_project(data: ProjectCreate, current_user: CurrentUser, service: ProjectServiceDep):
-    return service.create_project(current_user.user_id, data)
+    return service.create_project(current_user.user_id,
+                                  data
+                                )
 
 @router.get("/group/{group_id}", response_model=list[ProjectResponse], status_code=status.HTTP_200_OK)
 def get_projects_by_group(group_id: int, current_user: CurrentUser, service: ProjectServiceDep):
-    return service.get_projects_by_group(group_id, current_user.user_id)
+    return service.get_projects_by_group(
+        group_id,
+        current_user.user_id
+    )
 
+@router.get("/{project_id}", response_model=ProjectResponse, status_code=status.HTTP_200_OK)
+def get_project_by_user(project_id: int, current_user: CurrentUser, service: ProjectServiceDep):
+    return service.get_project_by_user(
+        project_id,
+        current_user.user_id
+    )
+    
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(project_id: int, current_user: CurrentUser, service: ProjectServiceDep):
+    service.delete_project(
+        project_id,
+        current_user.user_id
+    )
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT
+    )
+    
+@router.patch("/{project_id}", response_model=ProjectResponse, status_code=status.HTTP_200_OK)
+def update_project(project_id: int, data: ProjectUpdate, current_user: CurrentUser, service: ProjectServiceDep):
+    return service.update_project(
+        project_id,
+        current_user.user_id,
+        data
+    )
