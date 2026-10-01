@@ -1,8 +1,10 @@
+from app.repositories.group_repository import GroupRepository
 from app.repositories.user_repository import UserRepository
 from app.models import User, UserPreferences
 from app.exceptions import UserNotFoundException, UserExistsException, FirebaseUserUIDMissingException, UserPreferencesNotFoundException
 from app.schemas import UserUpdate, UserPreferencesUpdate
 from botocore.exceptions import ClientError
+from app.core.config import settings
 from app.core.dependencies.external import S3ClientDep
 
 class UserService:
@@ -21,11 +23,14 @@ class UserService:
         default_preferences = UserPreferences(user_id=persisted_user.user_id)
         self.repository.db.add(default_preferences)
         self.repository.db.commit()
+        GroupRepository(self.repository.db).get_or_create_personal_group(
+            persisted_user.user_id
+        )
         self.setup_user_folder_bucket(persisted_user.user_id)
         return persisted_user
 
     def setup_user_folder_bucket(self, user_id: str) -> None:
-        bucket_name = "files"
+        bucket_name = settings.S3_BUCKET
         file_name = f"attachments/{user_id}/blob.txt"
         body_content = b"Hello, World!"
         try:

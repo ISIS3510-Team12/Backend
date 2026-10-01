@@ -1,21 +1,27 @@
 from datetime import datetime
 
-from sqlalchemy import Column
-from sqlalchemy import Enum as SAEnum
+from app.core.consts import TaskStatus, TaskEventType
 from sqlmodel import Field, Relationship, SQLModel
-
-from app.core.consts import NotificationKind, TaskEventType, TaskStatus, enum_values
 
 class UserGroup(SQLModel, table=True):
     user_id: str = Field(foreign_key="user.user_id", primary_key=True)
+
+    
     group_id: int = Field(foreign_key="group.id", primary_key=True)
+
+class TaskAssignee(SQLModel, table=True):
+    task_id: int = Field(foreign_key="task.id", primary_key=True)
+    user_id: str = Field(foreign_key="user.user_id", primary_key=True)
+
+class TaskRelation(SQLModel, table=True):
+    task_id: int = Field(foreign_key="task.id", primary_key=True)
+    related_task_id: int = Field(foreign_key="task.id", primary_key=True)
 
 class User(SQLModel, table=True):
     user_id: str = Field(primary_key=True, index=True)
     first_name: str
     last_name: str
     email: str
-    major: str
     auth_provider: str
     last_active_at: datetime
     
@@ -29,8 +35,9 @@ class User(SQLModel, table=True):
     tasks: list["Task"] = Relationship(
         back_populates="owner",
     )
-    device_tokens: list["DeviceToken"] = Relationship(
-        back_populates="user",
+    assigned_tasks: list["Task"] = Relationship(
+        back_populates="assignees",
+        link_model=TaskAssignee,
     )
     taskEvents: list["TaskEvent"] = Relationship(
         back_populates="author",
@@ -54,7 +61,6 @@ class Group(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
     name: str
     description: str
-    deadline: datetime
     
     users: list[User] = Relationship(
         back_populates="groups",
@@ -81,20 +87,27 @@ class Project(SQLModel, table=True):
 class Task(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
     title: str
+    description: str | None = None
     task_type: str
     status: TaskStatus
     is_priority: bool = False
     needs_help: bool = False
     deadline: datetime | None = None
 
-    # Owner
+    # Owner (creator)
     user_id: str = Field(
         foreign_key="user.user_id",
         index=True,
     )
 
-    project_id: int = Field(
+    project_id: int | None = Field(
+        default=None,
         foreign_key="project.id",
+        index=True,
+    )
+
+    group_id: int = Field(
+        foreign_key="group.id",
         index=True,
     )
 
@@ -104,6 +117,31 @@ class Task(SQLModel, table=True):
 
     project: Project = Relationship(
         back_populates="tasks",
+    )
+
+    # People assigned to the task
+    assignees: list[User] = Relationship(
+        back_populates="assigned_tasks",
+        link_model=TaskAssignee,
+    )
+
+    # Related tasks / subtasks
+    related_tasks: list["Task"] = Relationship(
+        back_populates="related_from",
+        link_model=TaskRelation,
+        sa_relationship_kwargs=dict(
+            primaryjoin="Task.id==TaskRelation.task_id",
+            secondaryjoin="Task.id==TaskRelation.related_task_id",
+        ),
+    )
+
+    related_from: list["Task"] = Relationship(
+        back_populates="related_tasks",
+        link_model=TaskRelation,
+        sa_relationship_kwargs=dict(
+            primaryjoin="Task.id==TaskRelation.related_task_id",
+            secondaryjoin="Task.id==TaskRelation.task_id",
+        ),
     )
 
     # Related entities
@@ -141,16 +179,10 @@ class TimeBlock(SQLModel, table=True):
 class Reminder(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
 
-    kind: NotificationKind = Field(
-        sa_column=Column(
-            SAEnum(NotificationKind, name="notification_kind", values_callable=enum_values),
-            nullable=False,
-        )
-    )
     scheduled_at: datetime
+    enabled: bool = True
     sent_at: datetime | None = None
     acted_at: datetime | None = None
-    dismissed_at: datetime | None = None
 
     task_id: int = Field(
         foreign_key="task.id",
@@ -177,26 +209,11 @@ class Attachment(SQLModel, table=True):
         back_populates="attachments",
     )
 
-class DeviceToken(SQLModel, table=True):
-    id: int = Field(primary_key=True, index=True)
-
-    user_id: str = Field(
-        foreign_key="user.user_id",
-        index=True,
-    )
-    token: str = Field(unique=True, index=True)
-    platform: str
-    created_at: datetime
-    last_seen_at: datetime
-
-    user: User = Relationship(
-        back_populates="device_tokens",
-    )
-
 class TaskEvent(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
 
     event_type: TaskEventType
+    task_status: TaskStatus
     occurred_at: datetime
 
     task_id: int = Field(
@@ -216,3 +233,17 @@ class TaskEvent(SQLModel, table=True):
     author: User = Relationship(
         back_populates="taskEvents",
     )
+
+class ScreenLoadEvent(SQLModel, table=True):
+    id: int = Field(primary_key=True, index=True)
+
+    screen: str
+    load_time_ms: float
+    occurred_at: datetime
+
+    user_id: str = Field(
+        foreign_key="user.user_id",
+        index=True,
+    )
+
+    user: User = Relationship()

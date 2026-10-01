@@ -1,6 +1,8 @@
 from fastapi import APIRouter, status
 
-from app.core.dependencies.services import TaskServiceDep
+from app.core.dependencies.auth import CurrentUser
+from app.core.dependencies.services import TaskServiceDep, TelemetryServiceDep
+from app.schemas import ScreenLoadEventCreate
 
 router = APIRouter(
     prefix="/telemetry",
@@ -16,7 +18,15 @@ def get_task_events(
 
 @router.get("/users/{user_id}/events", status_code=status.HTTP_200_OK)
 def get_user_task_events(
-    user_id: int,
+    user_id: str,
     service: TaskServiceDep
 ):
     return service.get_task_events_by_user(user_id)
+
+@router.post("/screen-load", status_code=status.HTTP_201_CREATED)
+def register_screen_load(
+    data: ScreenLoadEventCreate,
+    current_user: CurrentUser,
+    service: TelemetryServiceDep,
+):
+    return service.register_screen_load(current_user.user_id, data)

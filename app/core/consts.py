@@ -1,44 +1,26 @@
-from enum import Enum, StrEnum
-
+from enum import StrEnum
 
 class TaskStatus(StrEnum):
     COMPLETED = "completed"
     NOT_STARTED = "not started"
     IN_PROGRESS = "in_progress"
-
-
+    
 class TaskEventType(StrEnum):
     CREATED = "created"
     VIEWED = "viewed"
     UPDATED = "updated"
+    STATUS_CHANGED = "status_changed"
     DELETED = "deleted"
 
+class AttachmentKind(StrEnum):
+    PHOTO = "photo"
 
-class EventType(str, Enum):
-    CREATED = "created"
-    STARTED = "started"
-    COMPLETED = "completed"
-    NEEDS_HELP = "needs_help"
+PERSONAL_GROUP_NAME = "Personal"
+PERSONAL_GROUP_DESCRIPTION = "Personal tasks"
 
+MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
+ALLOWED_PHOTO_CONTENT_TYPES = frozenset(
+    {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
+)
 
-class NotificationKind(str, Enum):
-    DEADLINE_SOON = "deadline_soon"
-    NEEDS_HELP = "needs_help"
-    PRIORITY = "priority"
-
-
-def enum_values(enum_class: type[Enum]) -> list[str]:
-    values: list[str] = []
-    for member in enum_class:
-        values.append(member.value)
-    return values
-
-
-NOTIFICATION_WINDOW_HOURS = 24
-
-SECONDS_PER_MINUTE = 60
-
-DEFAULT_TASK_DURATION_MINUTES = 60
-
-BASED_ON_HISTORY = "historical_events"
-BASED_ON_FALLBACK = "task_estimate"
+SECONDS_PER_DAY = 86400

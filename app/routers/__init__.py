@@ -4,3 +4,5 @@ from .tasks import router as tasks_router
 from .projects import router as projects_router
 from .groups import router as groups_router
 from .telemetry import router as telemetry_router
+from .analytics import router as analytics_router
+from .notifications import router as notifications_router

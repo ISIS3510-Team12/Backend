@@ -10,6 +10,12 @@ class UserRepository(BaseRepository):
     def get_by_id(self, user_id: str) -> User | None:
         return self.db.get(User, user_id)
 
+    def get_existing_ids(self, user_ids: list[str]) -> set[str]:
+        if not user_ids:
+            return set()
+        statement = select(User.user_id).where(User.user_id.in_(user_ids))
+        return set(self.db.exec(statement).all())
+
     def get_user_preferences(self, user_id: str) -> UserPreferences | None:
         user = self.db.get(User, user_id)
         if user:

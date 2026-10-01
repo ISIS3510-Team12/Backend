@@ -3,11 +3,10 @@ from typing import TYPE_CHECKING
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from botocore.exceptions import ClientError
+from app.core.config import settings
 from app.core.dependencies.external import initialize_firebase_app, s3_client
 from app.core.logger import get_logger
 
-if TYPE_CHECKING:
-    from types_boto3_s3.client import S3Client
 
 logger = get_logger(__name__)
 
@@ -16,7 +15,7 @@ logger = get_logger(__name__)
 async def lifespan(_: FastAPI):
     setup_bucket(
         s3_client=s3_client,
-        bucket_name="files",
+        bucket_name=settings.S3_BUCKET,
     )
     initialize_firebase_app()
     yield

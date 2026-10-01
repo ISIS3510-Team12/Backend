@@ -1,25 +1,28 @@
-from fastapi import APIRouter, HTTPException, Response, status
-from pydantic import BaseModel
+from fastapi import APIRouter, File, HTTPException, Response, UploadFile, status
+from fastapi.responses import StreamingResponse
 
+from app.core.consts import ALLOWED_PHOTO_CONTENT_TYPES, MAX_PHOTO_SIZE_BYTES, TaskStatus
 from app.core.dependencies.auth import CurrentUser
-from app.core.dependencies.services import TaskInsightsServiceDep, TaskServiceDep
-from app.schemas import TaskCreate, TaskUpdate
+from app.core.dependencies.external import S3ClientDep
+from app.core.dependencies.services import TaskServiceDep
+from app.schemas import (
+    ReminderCreate,
+    ReminderResponse,
+    ReminderUpdate,
+    TaskCreate,
+    TaskResponse,
+    TaskUpdate,
+    TimeBlockCreate,
+    TimeBlockResponse,
+    TimeBlockUpdate,
+)
 
 router = APIRouter(
     prefix="/tasks",
     tags=["tasks"]
 )
 
-
-class DurationEstimateResponse(BaseModel):
-    task_id: int
-    suggested_duration_minutes: int
-    current_estimate_minutes: int
-    sample_size: int
-    based_on: str
-
-
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(
     data: TaskCreate,
     current_user: CurrentUser,
@@ -27,62 +30,48 @@ def create_task(
 ):
     return service.create_task(current_user.user_id, data)
 
-
-@router.get("", status_code=status.HTTP_200_OK)
-def get_tasks(
+@router.get("", response_model=list[TaskResponse], status_code=status.HTTP_200_OK)
+def get_tasks_by_user(
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
-    return service.get_tasks(current_user.user_id)
+    return service.get_tasks_by_user(current_user.user_id)
 
-
-@router.get(
-    "/{task_id}/duration-estimate",
-    response_model=DurationEstimateResponse,
-)
-def get_duration_estimate_endpoint(
-    task_id: int,
+@router.get("/own/{group_id}", response_model=list[TaskResponse], status_code=status.HTTP_200_OK)
+def get_own_tasks(
+    group_id: int,
     current_user: CurrentUser,
-    service: TaskInsightsServiceDep,
-) -> DurationEstimateResponse:
-    """
-    Smart feature. It suggests a realistic duration for a task from past activity.
-    """
-    task = service.get_task(task_id)
+    service: TaskServiceDep
+):
+    return service.get_own_tasks(current_user.user_id, group_id)
 
-    if task is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found",
-        )
+@router.get("/group/{group_id}", response_model=list[TaskResponse], status_code=status.HTTP_200_OK)
+def get_group_tasks(
+    group_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.get_group_tasks(current_user.user_id, group_id)
 
-    if not service.user_can_access_task(task, current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No access to this task",
-        )
+@router.get("/all", response_model=list[TaskResponse], status_code=status.HTTP_200_OK)
+def get_all_tasks(
+    current_user: CurrentUser,
+    service: TaskServiceDep,
+    due_within_days: int | None = None,
+    mine: bool = False,
+    priority: bool = False
+):
+    return service.get_all_tasks(current_user.user_id, due_within_days, mine, priority)
 
-    estimate = service.estimate_task_duration(task, current_user)
-
-    return DurationEstimateResponse(
-        task_id=task_id,
-        suggested_duration_minutes=estimate["suggested_duration_minutes"],
-        current_estimate_minutes=estimate["current_estimate_minutes"],
-        sample_size=estimate["sample_size"],
-        based_on=estimate["based_on"],
-    )
-
-
-@router.get("/{task_id}", status_code=status.HTTP_200_OK)
-def get_task(
+@router.get("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
+def get_task_by_user(
     task_id: int,
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
-    return service.get_task(task_id, current_user.user_id)
+    return service.get_task_by_user(task_id, current_user.user_id)
 
-
-@router.patch("/{task_id}", status_code=status.HTTP_200_OK)
+@router.patch("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def update_task(
     task_id: int,
     data: TaskUpdate,
@@ -91,6 +80,14 @@ def update_task(
 ):
     return service.update_task(task_id, current_user.user_id, data)
 
+@router.patch("/{task_id}/status", response_model=TaskResponse, status_code=status.HTTP_200_OK)
+def change_task_status(
+    task_id: int,
+    status: TaskStatus,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.change_task_status(task_id, current_user.user_id, status)
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(
@@ -100,3 +97,153 @@ def delete_task(
 ):
     service.delete_task(task_id, current_user.user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# --- Reminders -----------------------------------------------------------
+
+@router.get(
+    "/{task_id}/reminders",
+    response_model=list[ReminderResponse],
+    status_code=status.HTTP_200_OK,
+)
+def get_reminders(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.get_reminders(task_id, current_user.user_id)
+
+@router.post(
+    "/{task_id}/reminders",
+    response_model=ReminderResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_reminder(
+    task_id: int,
+    data: ReminderCreate,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.create_reminder(task_id, current_user.user_id, data)
+
+@router.patch(
+    "/{task_id}/reminders/{reminder_id}",
+    response_model=ReminderResponse,
+    status_code=status.HTTP_200_OK,
+)
+def update_reminder(
+    task_id: int,
+    reminder_id: int,
+    data: ReminderUpdate,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.update_reminder(task_id, reminder_id, current_user.user_id, data)
+
+@router.delete(
+    "/{task_id}/reminders/{reminder_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_reminder(
+    task_id: int,
+    reminder_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    service.delete_reminder(task_id, reminder_id, current_user.user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# --- Time blocks ---------------------------------------------------------
+
+@router.get(
+    "/{task_id}/time-blocks",
+    response_model=list[TimeBlockResponse],
+    status_code=status.HTTP_200_OK,
+)
+def get_time_blocks(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.get_time_blocks(task_id, current_user.user_id)
+
+@router.post(
+    "/{task_id}/time-blocks",
+    response_model=TimeBlockResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_time_block(
+    task_id: int,
+    data: TimeBlockCreate,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.create_time_block(task_id, current_user.user_id, data)
+
+@router.patch(
+    "/{task_id}/time-blocks/{time_block_id}",
+    response_model=TimeBlockResponse,
+    status_code=status.HTTP_200_OK,
+)
+def update_time_block(
+    task_id: int,
+    time_block_id: int,
+    data: TimeBlockUpdate,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.update_time_block(task_id, time_block_id, current_user.user_id, data)
+
+@router.delete(
+    "/{task_id}/time-blocks/{time_block_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_time_block(
+    task_id: int,
+    time_block_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    service.delete_time_block(task_id, time_block_id, current_user.user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/{task_id}/photo", status_code=status.HTTP_204_NO_CONTENT)
+def replace_task_photo(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep,
+    s3_client: S3ClientDep,
+    file: UploadFile = File(...),
+):
+    content_type = file.content_type or ""
+    if content_type not in ALLOWED_PHOTO_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="The photo must be a JPEG, PNG, WebP or HEIC image.",
+        )
+    content = file.file.read(MAX_PHOTO_SIZE_BYTES + 1)
+    if len(content) > MAX_PHOTO_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="The photo exceeds the maximum allowed size.",
+        )
+    service.replace_photo(
+        task_id, current_user.user_id, content, content_type, s3_client
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get("/{task_id}/photo", status_code=status.HTTP_200_OK)
+def get_task_photo(
+    task_id: int,
+    current_user: CurrentUser,
+    service: TaskServiceDep,
+    s3_client: S3ClientDep,
+):
+    photo = service.get_photo(task_id, current_user.user_id, s3_client)
+    if photo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The task has no photo.",
+        )
+    body, content_type = photo
+    return StreamingResponse(body, media_type=content_type)

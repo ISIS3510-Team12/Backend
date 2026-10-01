@@ -35,6 +35,9 @@ class CoreSettings(BaseSettings):
     S3_ACCESS_KEY: str = ""
     S3_SECRET_KEY: str = ""
     S3_ENDPOINT: str = ""
+    S3_BUCKET: str = "files"
+    FIREBASE_PROJECT_ID: str = ""
+    FIREBASE_AUTH_EMULATOR_HOST: str = ""
 
     @property
     def DATABASE_URL(self) -> str:
