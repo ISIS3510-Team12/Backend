@@ -1,6 +1,7 @@
 from typing import Annotated
 from fastapi import Depends
-from app.core.dependencies.repositories import UserRepositoryDep, TaskRepositoryDep, GroupRepositoryDep, ProjectRepositoryDep, AnalyticsRepositoryDep
+from app.core.dependencies.repositories import TaskEventRepositoryDep, UserRepositoryDep, TaskRepositoryDep, GroupRepositoryDep, ProjectRepositoryDep, AnalyticsRepositoryDep
+from app.services.notification_service import NotificationService
 from app.services.user_service import UserService
 from app.services.task_service import TaskService
 from app.services.group_service import GroupService
@@ -19,7 +20,8 @@ UserServiceDep = Annotated[
 def get_task_service(
     repo: TaskRepositoryDep,
     project_repo: ProjectRepositoryDep,
-    user_repo: UserRepositoryDep) -> TaskService:
+    user_repo: UserRepositoryDep,
+    task_event_repo: TaskEventRepositoryDep) -> TaskService:
     return TaskService(repo, project_repo, user_repo)
 
 TaskServiceDep = Annotated[
@@ -51,5 +53,11 @@ AnalyticsServiceDep = Annotated[
     Depends(get_analytics_service),
 ]
 
+def get_notification_service(repo: TaskEventRepositoryDep) -> NotificationService:
+    return NotificationService(repo)
 
 
+NotificationServiceDep = Annotated[
+    NotificationService,
+    Depends(get_notification_service),
+]

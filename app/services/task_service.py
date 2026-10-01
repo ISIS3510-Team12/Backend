@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from app.repositories.task_event_repository import TaskEventRepository
 from botocore.exceptions import ClientError
 from types_boto3_s3.client import S3Client
 from app.core.config import settings
@@ -36,10 +37,12 @@ class TaskService:
         repository: TaskRepository,
         project_repository: ProjectRepository,
         user_repository: UserRepository,
+        task_event_repository: TaskEventRepository,
     ):
         self.repository = repository
         self.project_repository = project_repository
         self.user_repository = user_repository
+        self.task_event_repository = task_event_repository
 
     def get_task_or_raise(self, task_id: int, user_id: int) -> Task:
         task = self.repository.get_task_for_user(task_id, user_id)
@@ -61,7 +64,7 @@ class TaskService:
             task_id=task_id,
             author_id=user_id,
         )
-        self.repository.register_task_event(task_event)
+        self.task_event_repository.register_task_event(task_event)
 
     def validate_assignees(self, user_ids: list[str]) -> None:
         existing_ids = self.user_repository.get_existing_ids(user_ids)
@@ -313,11 +316,12 @@ class TaskService:
         task = self.repository.get_task_by_id(task_id)
         if task is None:
             raise TaskNotFoundException(task_id)
-        return self.repository.get_task_events_by_task_id(task.id)
+        return self.task_event_repository.get_task_events_by_task_id(task.id)
     
     def get_task_events_by_user(self, user_id: int) -> list[TaskEvent]:
-        return self.repository.get_task_events_by_user_id(user_id)
+        return self.task_event_repository.get_task_events_by_user_id(user_id)
 
+    # --- Photos -------------------------------------------------------
 
     def replace_photo(
         self,
