@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from app.core.consts import TaskStatus, TaskEventType
-from sqlalchemy import Index, text
 from sqlmodel import Field, Relationship, SQLModel
 
 class UserGroup(SQLModel, table=True):
@@ -191,15 +190,6 @@ class Reminder(SQLModel, table=True):
     )
 
 class Attachment(SQLModel, table=True):
-    __table_args__ = (
-        Index(
-            "uq_attachment_task_photo",
-            "task_id",
-            unique=True,
-            postgresql_where=text("kind = 'photo'"),
-        ),
-    )
-
     id: int = Field(primary_key=True, index=True)
     kind: str
     bucket: str
