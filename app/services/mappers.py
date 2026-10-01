@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.core.consts import AttachmentKind
 from app.models import Group, Project, Reminder, Task, TimeBlock, User
 from app.schemas import (
     GroupResponse,
@@ -115,6 +116,7 @@ def to_task_response(task: Task) -> TaskResponse:
         user_id=task.user_id,
         project_id=task.project_id,
         group_id=group_id,
+        has_photo=any(attachment.kind == AttachmentKind.PHOTO for attachment in task.attachments),
         assignees=assignees,
         related_tasks=related_tasks,
         reminders=reminders,

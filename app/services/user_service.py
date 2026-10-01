@@ -3,6 +3,7 @@ from app.models import User, UserPreferences
 from app.exceptions import UserNotFoundException, UserExistsException, FirebaseUserUIDMissingException, UserPreferencesNotFoundException
 from app.schemas import UserUpdate, UserPreferencesUpdate
 from botocore.exceptions import ClientError
+from app.core.config import settings
 from app.core.dependencies.external import S3ClientDep
 
 class UserService:
@@ -25,7 +26,7 @@ class UserService:
         return persisted_user
 
     def setup_user_folder_bucket(self, user_id: str) -> None:
-        bucket_name = "files"
+        bucket_name = settings.S3_BUCKET
         file_name = f"attachments/{user_id}/blob.txt"
         body_content = b"Hello, World!"
         try:

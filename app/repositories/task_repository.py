@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from . import BaseRepository
-from app.core.consts import TaskStatus
+from app.core.consts import AttachmentKind, TaskStatus
 from app.models import (
     Attachment,
     Project,
@@ -40,7 +40,7 @@ class TaskRepository(BaseRepository):
         )
         statement = (
             select(Task)
-            .options(selectinload(Task.project)) # Helps avoid N+1 queries when accessing the task's project
+            .options(selectinload(Task.project), selectinload(Task.attachments))
             .outerjoin(Project, Task.project_id == Project.id)
             .where(
                 Task.id == task_id,
@@ -79,7 +79,7 @@ class TaskRepository(BaseRepository):
     def get_all_tasks_by_user(self, user_id: int) -> list[Task]:
         statement = (
             select(Task)
-            .options(selectinload(Task.project))
+            .options(selectinload(Task.project), selectinload(Task.attachments))
             .where(Task.user_id == user_id)
         )
         results = self.db.exec(statement).all()
@@ -88,7 +88,7 @@ class TaskRepository(BaseRepository):
     def get_all_tasks_by_project(self, project_id: int) -> list[Task]:
         statement = (
             select(Task)
-            .options(selectinload(Task.project))
+            .options(selectinload(Task.project), selectinload(Task.attachments))
             .where(Task.project_id == project_id)
         )
         results = self.db.exec(statement)
@@ -101,7 +101,7 @@ class TaskRepository(BaseRepository):
         )
         statement = (
             select(Task)
-            .options(selectinload(Task.project))
+            .options(selectinload(Task.project), selectinload(Task.attachments))
             .join(Project, Task.project_id == Project.id)
             .where(
                 Project.group_id == group_id,
@@ -118,7 +118,7 @@ class TaskRepository(BaseRepository):
         )
         statement = (
             select(Task)
-            .options(selectinload(Task.project))
+            .options(selectinload(Task.project), selectinload(Task.attachments))
             .join(Project, Task.project_id == Project.id)
             .where(
                 Project.group_id == group_id,
@@ -139,7 +139,7 @@ class TaskRepository(BaseRepository):
         """Every task in any group the user belongs to, with optional filters."""
         statement = (
             select(Task)
-            .options(selectinload(Task.project))
+            .options(selectinload(Task.project), selectinload(Task.attachments))
             .join(Project, Task.project_id == Project.id)
             .join(UserGroup, UserGroup.group_id == Project.group_id)
             .where(UserGroup.user_id == user_id)
@@ -171,7 +171,7 @@ class TaskRepository(BaseRepository):
     def get_task_by_project(self, task_id: int, project_id: int):
         statement = (
             select(Task)
-            .options(selectinload(Task.project))
+            .options(selectinload(Task.project), selectinload(Task.attachments))
             .where(
                 Task.id == task_id,
                 Task.project_id == project_id
@@ -307,3 +307,22 @@ class TaskRepository(BaseRepository):
         statement = select(TaskEvent).where(TaskEvent.author_id == user_id)
         results = self.db.exec(statement).all()
         return list(results)
+
+    def get_photo_attachments(self, task_id: int) -> list[Attachment]:
+        statement = (
+            select(Attachment)
+            .where(Attachment.task_id == task_id, Attachment.kind == AttachmentKind.PHOTO)
+            .order_by(Attachment.last_modified_date.desc())
+        )
+        return list(self.db.exec(statement).all())
+
+    def replace_photo_attachments(
+        self, task_id: int, attachment: Attachment
+    ) -> None:
+        self.db.exec(
+            delete(Attachment).where(
+                Attachment.task_id == task_id, Attachment.kind == AttachmentKind.PHOTO
+            )
+        )
+        self.db.add(attachment)
+        self.db.commit()

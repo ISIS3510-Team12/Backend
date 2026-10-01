@@ -12,6 +12,12 @@ class TaskEventType(StrEnum):
     STATUS_CHANGED = "status_changed"
     DELETED = "deleted"
 
+class AttachmentKind(StrEnum):
+    PHOTO = "photo"
+
+MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
+ALLOWED_PHOTO_CONTENT_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
+
 EVENT_STARTED = "started"
 EVENT_COMPLETED = "completed"
 
