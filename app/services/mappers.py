@@ -138,7 +138,6 @@ def to_group_response(group: Group, pending_task_count: int = 0) -> GroupRespons
         id=group.id,
         name=group.name,
         description=group.description,
-        deadline=group.deadline,
         users=users,
         pending_task_count=pending_task_count,
     )
