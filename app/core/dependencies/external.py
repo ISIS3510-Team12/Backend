@@ -2,6 +2,7 @@ from __future__ import annotations
 import boto3
 import firebase_admin
 import os
+from botocore.config import Config
 from functools import lru_cache
 from firebase_admin import App, credentials
 from app.core.config import settings
@@ -22,6 +23,8 @@ def get_s3_client() -> S3Client:
         aws_access_key_id=settings.S3_ACCESS_KEY,
         aws_secret_access_key=settings.S3_SECRET_KEY,
         endpoint_url=settings.S3_ENDPOINT,
+        region_name=settings.S3_REGION or "us-east-1",
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
 
@@ -41,9 +44,9 @@ def initialize_firebase_app() -> App:
         return firebase_admin.initialize_app(options={"projectId": project_id})
 
     firebase_credentials = settings.FIREBASE_CREDENTIALS_DATA
-    certificate = credentials.Certificate(
-        firebase_credentials.model_dump()
-    )
+    data = firebase_credentials.model_dump()
+    data["private_key"] = data["private_key"].replace("\\n", "\n")
+    certificate = credentials.Certificate(data)
     return firebase_admin.initialize_app(certificate)
 
 

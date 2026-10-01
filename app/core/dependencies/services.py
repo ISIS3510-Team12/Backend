@@ -12,6 +12,7 @@ from app.core.dependencies.repositories import (
 from app.services.notification_service import NotificationService
 from app.services.user_service import UserService
 from app.services.task_service import TaskService
+from app.services.project_insights import ProjectInsightsService
 from app.services.group_service import GroupService
 from app.services.project_service import ProjectService
 from app.analytics.analytics_service import AnalyticsService
@@ -39,6 +40,19 @@ def get_task_service(repo: TaskRepositoryDep, project_repo: ProjectRepositoryDep
 TaskServiceDep = Annotated[
     TaskService,
     Depends(get_task_service),
+]
+
+
+def get_project_insights_service(
+    project_repo: ProjectRepositoryDep,
+    task_repo: TaskRepositoryDep,
+    task_event_repo: TaskEventRepositoryDep,
+) -> ProjectInsightsService:
+    return ProjectInsightsService(project_repo, task_repo, task_event_repo)
+
+ProjectInsightsServiceDep = Annotated[
+    ProjectInsightsService,
+    Depends(get_project_insights_service),
 ]
 
 
