@@ -33,4 +33,7 @@ class UserRepository(BaseRepository):
         if user:
             return user.tasks
         return None
-        
+
+    def get_all(self) -> list[User]:
+        statement = select(User)
+        return list(self.db.exec(statement).all())

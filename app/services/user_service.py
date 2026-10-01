@@ -97,4 +97,5 @@ class UserService:
     def delete_user(self, user: User) -> None:
         self.repository.db.delete(user)
 
-    
+    def get_users(self) -> list[User]:
+        return self.repository.get_all()

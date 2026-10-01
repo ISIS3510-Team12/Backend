@@ -48,7 +48,9 @@ def get_current_user(current_user: CurrentUser, service: UserServiceDep) -> User
     """
     return current_user
 
-
+@router.get("/")
+def get_users(current_user: CurrentUser, service: UserServiceDep) -> list[User]:
+    return service.get_users()
 
 
 
