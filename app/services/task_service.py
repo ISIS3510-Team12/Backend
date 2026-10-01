@@ -77,29 +77,40 @@ class TaskService:
             if user_id not in existing_ids:
                 raise UserNotFoundException(user_id)
 
-    def validate_related_tasks(self, task: Task, related_task_ids: list[int]) -> None:
+    def validate_related_tasks(self, owner_id: str, related_task_ids: list[int]) -> None:
         accessible_ids = self.repository.get_accessible_task_ids(
-            related_task_ids, task.user_id
+            related_task_ids, owner_id
         )
         for related_id in related_task_ids:
             if related_id not in accessible_ids:
                 raise TaskNotFoundException(related_id)
+
+    def validate_relationships(
+        self, owner_id: str, task_id: int | None, data: TaskCreate | TaskUpdate
+    ) -> None:
+        provided = data.model_dump(exclude_unset=True)
+        if "assignee_ids" in provided:
+            self.validate_assignees(provided.get("assignee_ids") or [])
+        if "related_task_ids" in provided:
+            related_ids = [
+                related_id
+                for related_id in provided.get("related_task_ids") or []
+                if related_id != task_id
+            ]
+            self.validate_related_tasks(owner_id, related_ids)
 
     def apply_relationships(self, task: Task, data: TaskCreate | TaskUpdate) -> None:
         """Persist assignees / related tasks when the request provided them."""
         provided = data.model_dump(exclude_unset=True)
 
         if "assignee_ids" in provided:
-            assignee_ids = provided.get("assignee_ids") or []
-            self.validate_assignees(assignee_ids)
-            self.repository.replace_assignees(task, assignee_ids)
+            self.repository.replace_assignees(task, provided.get("assignee_ids") or [])
 
         if "related_task_ids" in provided:
             related_ids: list[int] = []
             for related_id in provided.get("related_task_ids") or []:
                 if related_id != task.id:
                     related_ids.append(related_id)
-            self.validate_related_tasks(task, related_ids)
             self.repository.replace_related_tasks(task, related_ids)
 
     def create_task(self, user_id: int, data: TaskCreate) -> TaskResponse:
@@ -115,6 +126,7 @@ class TaskService:
             raise GroupNotFoundException(data.group_id)
         if project is not None and project.group_id != group.id:
             raise ProjectGroupMismatchException(project.id, group.id)
+        self.validate_relationships(user_id, None, data)
 
         task = Task(
             title=data.title,
@@ -211,6 +223,8 @@ class TaskService:
             project = self.project_repository.get_project_by_id(data.project_id, user_id)
             if project is None:
                 raise ProjectNotFoundException(data.project_id)
+
+        self.validate_relationships(task.user_id, task.id, data)
 
         # Scalar columns only; relationships are handled separately below.
         fields = data.model_dump(exclude_unset=True, exclude={"assignee_ids", "related_task_ids"})

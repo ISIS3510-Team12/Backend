@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, HTTPException, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 
-from app.core.consts import ALLOWED_PHOTO_CONTENT_TYPES, MAX_PHOTO_SIZE_BYTES
+from app.core.consts import ALLOWED_PHOTO_CONTENT_TYPES, MAX_PHOTO_SIZE_BYTES, TaskStatus
 from app.core.dependencies.auth import CurrentUser
 from app.core.dependencies.external import S3ClientDep
 from app.core.dependencies.services import TaskServiceDep
@@ -83,7 +83,7 @@ def update_task(
 @router.patch("/{task_id}/status", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def change_task_status(
     task_id: int,
-    status: str,
+    status: TaskStatus,
     current_user: CurrentUser,
     service: TaskServiceDep
 ):
