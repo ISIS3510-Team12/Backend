@@ -1,12 +1,14 @@
 from typing import Annotated
 from fastapi import Depends
 from app.core.dependencies.database import DatabaseSession
-from app.repositories.task_event_repository import TaskEventRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.group_repository import GroupRepository
 from app.repositories.project_repository import ProjectRepository
 from app.analytics.analytics_repository import AnalyticsRepository
+from app.repositories.task_event_repository import TaskEventRepository
+from app.telemetry.telemetry_repository import TelemetryRepository
+
 
 def get_user_repository(db: DatabaseSession) -> UserRepository:
     return UserRepository(db)
@@ -32,6 +34,7 @@ GroupRepositoryDep = Annotated[
     Depends(get_group_repository),
 ]
 
+
 def get_project_repository(db: DatabaseSession) -> ProjectRepository:
     return ProjectRepository(db)
 
@@ -54,4 +57,12 @@ def get_task_event_repository(db: DatabaseSession) -> TaskEventRepository:
 TaskEventRepositoryDep = Annotated[
     TaskEventRepository,
     Depends(get_task_event_repository),
+]
+
+def get_telemetry_repository(db: DatabaseSession) -> TelemetryRepository:
+    return TelemetryRepository(db)
+
+TelemetryRepositoryDep = Annotated[
+    TelemetryRepository,
+    Depends(get_telemetry_repository),
 ]

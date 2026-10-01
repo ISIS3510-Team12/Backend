@@ -2,8 +2,8 @@ from sqlalchemy import func
 from sqlmodel import select
 
 from app.core.consts import TaskEventType, TaskStatus
-from app.models import Project, Task, TaskEvent
 from app.repositories import BaseRepository
+from app.models import Project, Task, TaskEvent, ScreenLoadEvent
 
 
 class AnalyticsRepository(BaseRepository):
@@ -49,6 +49,20 @@ class AnalyticsRepository(BaseRepository):
             .join(completed, completed.c.task_id == Task.id)
             .where(completed.c.completed_at >= first_viewed.c.first_viewed_at)
             .order_by(Task.id)
+        )
+
+        return list(self.db.exec(statement).all())
+
+    def get_screen_load_times(self) -> list:
+        statement = (
+            select(
+                ScreenLoadEvent.screen,
+                func.avg(
+                    ScreenLoadEvent.load_time_ms
+                ).label("average_load_time_ms"),
+            )
+            .group_by(ScreenLoadEvent.screen)
+            .order_by(ScreenLoadEvent.screen)
         )
 
         return list(self.db.exec(statement).all())
