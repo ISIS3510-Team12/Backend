@@ -3,7 +3,7 @@ from datetime import datetime
 from io import StringIO
 
 from app.analytics.analytics_repository import AnalyticsRepository
-from app.core.consts import PERSONAL_GROUP_NAME
+from app.core.consts import PERSONAL_GROUP_NAME, SECONDS_PER_DAY
 
 
 class AnalyticsService:
@@ -94,7 +94,7 @@ class AnalyticsService:
         ])
 
         for row in rows:
-            seconds_until_due = (row.deadline - now).total_seconds()
+            days_until_due = (row.deadline - now).total_seconds() / SECONDS_PER_DAY
             writer.writerow([
                 row.user_id,
                 row.user_role,
@@ -105,8 +105,8 @@ class AnalyticsService:
                 row.is_priority,
                 row.needs_help,
                 row.deadline.isoformat(),
-                round(seconds_until_due / 3600, 2),
-                round(seconds_until_due / 86400, 2),
+                round(days_until_due * 24, 2),
+                round(days_until_due, 2),
                 row.group_id,
                 row.group_name,
                 row.group_name == PERSONAL_GROUP_NAME,
