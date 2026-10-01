@@ -228,3 +228,17 @@ class TaskEvent(SQLModel, table=True):
     author: User = Relationship(
         back_populates="taskEvents",
     )
+
+class ScreenLoadEvent(SQLModel, table=True):
+    id: int = Field(primary_key=True, index=True)
+
+    screen: str
+    load_time_ms: float
+    occurred_at: datetime
+
+    user_id: str = Field(
+        foreign_key="user.user_id",
+        index=True,
+    )
+
+    user: User = Relationship()

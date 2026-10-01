@@ -7,6 +7,8 @@ from app.services.group_service import GroupService
 from app.services.project_service import ProjectService
 from app.analytics.analytics_service import AnalyticsService
 from app.core.dependencies.external import S3ClientDep
+from app.core.dependencies.repositories import TelemetryRepositoryDep
+from app.telemetry.telemetry_service import TelemetryService
 
 def get_user_service(repo: UserRepositoryDep, s3_client: S3ClientDep) -> UserService:
     return UserService(repo, s3_client)
@@ -52,4 +54,10 @@ AnalyticsServiceDep = Annotated[
 ]
 
 
+def get_telemetry_service(repo: TelemetryRepositoryDep)-> TelemetryService:
+    return TelemetryService(repo)
 
+TelemetryServiceDep = Annotated[
+    TelemetryService,
+    Depends(get_telemetry_service),
+]

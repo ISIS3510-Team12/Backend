@@ -42,3 +42,24 @@ class AnalyticsService:
             ])
 
         return buffer.getvalue()
+
+
+
+    def screen_load_time_csv(self) -> str:
+        rows = self.repository.get_screen_load_times()
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+
+        writer.writerow([
+            "screen",
+            "average_load_time_ms",
+        ])
+
+        for row in rows:
+            writer.writerow([
+                row.screen,
+                round(float(row.average_load_time_ms), 2),
+            ])
+
+        return buffer.getvalue()

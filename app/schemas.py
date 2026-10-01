@@ -155,3 +155,8 @@ class ProjectResponse(BaseModel):
     description: str
     deadline: datetime
     group_id: int
+
+
+class ScreenLoadEventCreate(BaseModel):
+    screen: str
+    load_time_ms: float
