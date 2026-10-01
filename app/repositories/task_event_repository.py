@@ -21,3 +21,30 @@ class TaskEventRepository(BaseRepository):
         statement = select(TaskEvent).where(TaskEvent.author_id == user_id)
         results = self.db.exec(statement).all()
         return list(results)
+    
+    def get_notifications_by_user_groups(self, user_id: str) -> list:
+        """
+        Task events (excluding the views) for tasks in the user's groups.
+        """
+        statement = (
+            select(TaskEvent, Task, Group)
+            .join(Task, Task.id == TaskEvent.task_id)
+            .join(Project, Project.id == Task.project_id)
+            .join(Group, Group.id == Project.group_id)
+            .join(UserGroup, UserGroup.group_id == Project.group_id)
+            .where(UserGroup.user_id == user_id)
+            .where(TaskEvent.event_type != TaskEventType.VIEWED)
+            .where(
+                or_(
+                    TaskEvent.event_type == TaskEventType.CREATED,
+                    TaskEvent.event_type == TaskEventType.UPDATED,
+                    TaskEvent.event_type == TaskEventType.DELETED,
+                    and_(
+                        TaskEvent.event_type == TaskEventType.STATUS_CHANGED,
+                        TaskEvent.task_status == TaskStatus.COMPLETED,
+                    ),
+                )
+            )
+            .order_by(TaskEvent.occurred_at.desc())
+        )
+        return list(self.db.exec(statement).all())
