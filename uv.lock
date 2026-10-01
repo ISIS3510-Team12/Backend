@@ -78,6 +78,7 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "python-dotenv" },
     { name = "sqlmodel" },
+    { name = "types-boto3-s3" },
 ]
 
 [package.dev-dependencies]
@@ -98,6 +99,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.13" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "sqlmodel", specifier = ">=0.0.42" },
+    { name = "types-boto3-s3", specifier = ">=1.43.93" },
 ]
 
 [package.metadata.requires-dev]
