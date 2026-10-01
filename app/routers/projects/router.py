@@ -1,8 +1,14 @@
 from fastapi import APIRouter, Response, status
 
 from app.core.dependencies.auth import CurrentUser
-from app.core.dependencies.services import ProjectServiceDep
-from app.schemas import ProjectCreate, ProjectUpdate, ProjectResponse
+from app.core.dependencies.services import ProjectInsightsServiceDep, ProjectServiceDep
+from app.exceptions import ProjectNotFoundException
+from app.schemas import (
+    DeadlinePredictionResponse,
+    ProjectCreate,
+    ProjectResponse,
+    ProjectUpdate,
+)
 
 router = APIRouter(
     prefix="/projects",
@@ -22,6 +28,40 @@ def get_projects_by_group(group_id: int, current_user: CurrentUser, service: Pro
         group_id,
         current_user.user_id
     )
+
+@router.get(
+    "/{project_id}/deadline-prediction",
+    response_model=DeadlinePredictionResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_deadline_prediction(
+    project_id: int,
+    current_user: CurrentUser,
+    service: ProjectInsightsServiceDep,
+) -> DeadlinePredictionResponse:
+    """
+    Smart feature. It predicts whether the project will be completed before its
+    deadline, from the pace at which its tasks have been completed.
+    """
+    project = service.get_accessible_project(project_id, current_user.user_id)
+    if project is None:
+        raise ProjectNotFoundException(project_id)
+
+    prediction = service.predict_deadline(project)
+
+    return DeadlinePredictionResponse(
+        project_id=project.id,
+        project_name=project.name,
+        deadline=project.deadline,
+        days_left=prediction["days_left"],
+        total_tasks=prediction["total_tasks"],
+        completed_tasks=prediction["completed_tasks"],
+        remaining_tasks=prediction["remaining_tasks"],
+        pace_tasks_per_day=prediction["pace_tasks_per_day"],
+        predicted_completion_date=prediction["predicted_completion_date"],
+        will_meet_deadline=prediction["will_meet_deadline"],
+    )
+
 
 @router.get("/{project_id}", response_model=ProjectResponse, status_code=status.HTTP_200_OK)
 def get_project_by_user(project_id: int, current_user: CurrentUser, service: ProjectServiceDep):

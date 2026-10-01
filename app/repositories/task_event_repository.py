@@ -1,4 +1,4 @@
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 from sqlmodel import select
 
 from . import BaseRepository
@@ -21,6 +21,15 @@ class TaskEventRepository(BaseRepository):
         statement = select(TaskEvent).where(TaskEvent.author_id == user_id)
         results = self.db.exec(statement).all()
         return list(results)
+
+    def get_project_first_event_at(self, project_id: int):
+        """Occurred_at of the earliest event among a project's tasks."""
+        statement = (
+            select(func.min(TaskEvent.occurred_at))
+            .join(Task, Task.id == TaskEvent.task_id)
+            .where(Task.project_id == project_id)
+        )
+        return self.db.exec(statement).first()
     
     def get_notifications_by_user_groups(self, user_id: str) -> list:
         """
