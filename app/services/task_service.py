@@ -337,16 +337,20 @@ class TaskService:
             Body=content,
             ContentType=content_type,
         )
-        self.repository.replace_photo_attachments(
-            task_id,
-            Attachment(
-                kind=AttachmentKind.PHOTO,
-                bucket=settings.S3_BUCKET,
-                key=key,
-                last_modified_date=datetime.now(),
-                task_id=task_id,
-            ),
-        )
+        try:
+            self.repository.replace_photo_attachments(
+                task_id,
+                Attachment(
+                    kind=AttachmentKind.PHOTO,
+                    bucket=settings.S3_BUCKET,
+                    key=key,
+                    last_modified_date=datetime.now(),
+                    task_id=task_id,
+                ),
+            )
+        except Exception:
+            s3_client.delete_object(Bucket=settings.S3_BUCKET, Key=key)
+            raise
         for old in previous:
             try:
                 s3_client.delete_object(Bucket=old.bucket, Key=old.key)

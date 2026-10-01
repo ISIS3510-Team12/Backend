@@ -312,7 +312,7 @@ class TaskRepository(BaseRepository):
         statement = (
             select(Attachment)
             .where(Attachment.task_id == task_id, Attachment.kind == AttachmentKind.PHOTO)
-            .order_by(Attachment.last_modified_date.desc())
+            .order_by(Attachment.last_modified_date.desc(), Attachment.id.desc())
         )
         return list(self.db.exec(statement).all())
 
