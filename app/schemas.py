@@ -116,6 +116,16 @@ class TaskResponse(BaseModel):
     related_tasks: list[TaskSummary] = []
     reminders: list[ReminderResponse] = []
 
+class TaskNotificationResponse(BaseModel):
+    id: int
+    task_id: int
+    task_title: str
+    group_id: int | None = None
+    group_name: str | None = None
+    event_type: str
+    occurred_at: datetime
+    author_id: str
+
 class GroupCreate(BaseModel):
     name: str
     description: str

@@ -7,8 +7,6 @@ from app.core.config import settings
 from app.core.dependencies.external import initialize_firebase_app, s3_client
 from app.core.logger import get_logger
 
-if TYPE_CHECKING:
-    from types_boto3_s3.client import S3Client
 
 logger = get_logger(__name__)
 
