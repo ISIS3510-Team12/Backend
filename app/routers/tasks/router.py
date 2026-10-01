@@ -53,9 +53,12 @@ def get_group_tasks(
 @router.get("/all", response_model=list[TaskResponse], status_code=status.HTTP_200_OK)
 def get_all_tasks(
     current_user: CurrentUser,
-    service: TaskServiceDep
+    service: TaskServiceDep,
+    due_within_days: int | None = None,
+    mine: bool = False,
+    priority: bool = False
 ):
-    return service.get_all_tasks(current_user.user_id)
+    return service.get_all_tasks(current_user.user_id, due_within_days, mine, priority)
 
 @router.get("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def get_task_by_user(

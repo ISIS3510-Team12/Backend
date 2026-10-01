@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from . import BaseRepository
 from app.core.consts import TaskStatus
 from app.models import (
@@ -127,8 +129,14 @@ class TaskRepository(BaseRepository):
         )
         return list(self.db.exec(statement).all())
 
-    def get_all_tasks_by_user_groups(self, user_id: str) -> list[Task]:
-        """Every task in any group the user belongs to (no ownership/group filter)."""
+    def get_all_tasks_by_user_groups(
+        self,
+        user_id: str,
+        due_within_days: int | None = None,
+        mine: bool = False,
+        priority: bool = False,
+    ) -> list[Task]:
+        """Every task in any group the user belongs to, with optional filters."""
         statement = (
             select(Task)
             .options(selectinload(Task.project))
@@ -136,6 +144,28 @@ class TaskRepository(BaseRepository):
             .join(UserGroup, UserGroup.group_id == Project.group_id)
             .where(UserGroup.user_id == user_id)
         )
+
+        if mine:
+            assigned_task_ids = select(TaskAssignee.task_id).where(
+                TaskAssignee.user_id == user_id
+            )
+            statement = statement.where(
+                or_(Task.user_id == user_id, Task.id.in_(assigned_task_ids))
+            )
+
+        if priority:
+            statement = statement.where(Task.is_priority)
+
+        if due_within_days is not None:
+            now = datetime.now()
+            deadline_limit = now + timedelta(days=due_within_days)
+            statement = statement.where(
+                Task.status != TaskStatus.COMPLETED,
+                Task.deadline.is_not(None),
+                Task.deadline >= now,
+                Task.deadline <= deadline_limit,
+            )
+
         return list(self.db.exec(statement).all())
 
     def get_task_by_project(self, task_id: int, project_id: int):

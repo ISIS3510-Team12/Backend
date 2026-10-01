@@ -141,9 +141,17 @@ class TaskService:
             responses.append(to_task_response(task))
         return responses
 
-    def get_all_tasks(self, user_id: str) -> list[TaskResponse]:
-        """Every task in any group the user belongs to."""
-        tasks = self.repository.get_all_tasks_by_user_groups(user_id)
+    def get_all_tasks(
+        self,
+        user_id: str,
+        due_within_days: int | None = None,
+        mine: bool = False,
+        priority: bool = False,
+    ) -> list[TaskResponse]:
+        """Every task in any group the user belongs to, with optional filters."""
+        tasks = self.repository.get_all_tasks_by_user_groups(
+            user_id, due_within_days, mine, priority
+        )
         responses: list[TaskResponse] = []
         for task in tasks:
             responses.append(to_task_response(task))
