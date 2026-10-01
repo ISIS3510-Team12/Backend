@@ -1,6 +1,11 @@
+import uuid
 from datetime import datetime
-from app.core.consts import TaskEventType, TaskStatus
-from app.models import Reminder, Task, TaskEvent, TimeBlock
+
+from botocore.exceptions import ClientError
+from types_boto3_s3.client import S3Client
+from app.core.config import settings
+from app.core.consts import AttachmentKind, TaskEventType, TaskStatus
+from app.models import Attachment, Reminder, Task, TaskEvent, TimeBlock
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
@@ -312,3 +317,52 @@ class TaskService:
     
     def get_task_events_by_user(self, user_id: int) -> list[TaskEvent]:
         return self.repository.get_task_events_by_user_id(user_id)
+
+
+    def replace_photo(
+        self,
+        task_id: int,
+        user_id: str,
+        content: bytes,
+        content_type: str,
+        s3_client: S3Client,
+    ) -> None:
+        self.get_task_or_raise(task_id, user_id)
+        previous = self.repository.get_photo_attachments(task_id)
+        extension = content_type.split("/")[-1] or "jpg"
+        key = f"tasks/{task_id}/{uuid.uuid4().hex}.{extension}"
+        s3_client.put_object(
+            Bucket=settings.S3_BUCKET,
+            Key=key,
+            Body=content,
+            ContentType=content_type,
+        )
+        self.repository.replace_photo_attachments(
+            task_id,
+            Attachment(
+                kind=AttachmentKind.PHOTO,
+                bucket=settings.S3_BUCKET,
+                key=key,
+                last_modified_date=datetime.now(),
+                task_id=task_id,
+            ),
+        )
+        for old in previous:
+            try:
+                s3_client.delete_object(Bucket=old.bucket, Key=old.key)
+            except ClientError:
+                pass
+
+    def get_photo(
+        self, task_id: int, user_id: str, s3_client: S3Client
+    ) -> tuple[object, str] | None:
+        self.get_task_or_raise(task_id, user_id)
+        attachments = self.repository.get_photo_attachments(task_id)
+        if not attachments:
+            return None
+        latest = attachments[0]
+        try:
+            response = s3_client.get_object(Bucket=latest.bucket, Key=latest.key)
+        except ClientError:
+            return None
+        return response["Body"], response.get("ContentType", "image/jpeg")
