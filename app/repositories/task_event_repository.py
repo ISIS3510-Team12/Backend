@@ -2,8 +2,8 @@ from sqlalchemy import and_, or_
 from sqlmodel import select
 
 from . import BaseRepository
-from app.core.consts import TaskEventType, TaskStatus
-from app.models import Group, Project, Task, TaskEvent, UserGroup
+from app.core.consts import PERSONAL_GROUP_NAME, TaskEventType, TaskStatus
+from app.models import Group, Task, TaskEvent, UserGroup
 
 class TaskEventRepository(BaseRepository):
     def register_task_event(self, task_event: TaskEvent) -> TaskEvent:
@@ -29,10 +29,10 @@ class TaskEventRepository(BaseRepository):
         statement = (
             select(TaskEvent, Task, Group)
             .join(Task, Task.id == TaskEvent.task_id)
-            .join(Project, Project.id == Task.project_id)
-            .join(Group, Group.id == Project.group_id)
-            .join(UserGroup, UserGroup.group_id == Project.group_id)
+            .join(Group, Group.id == Task.group_id)
+            .join(UserGroup, UserGroup.group_id == Task.group_id)
             .where(UserGroup.user_id == user_id)
+            .where(Group.name != PERSONAL_GROUP_NAME)
             .where(TaskEvent.event_type != TaskEventType.VIEWED)
             .where(
                 or_(
