@@ -81,11 +81,6 @@ class ProjectGroupMismatchException(BaseHTTPException):
         message = f"Project with ID {project_id} does not belong to group {group_id}."
         super().__init__(status_code=400, message=message)
 
-class PersonalGroupProtectedException(BaseHTTPException):
-    def __init__(self):
-        message = "The personal group cannot be modified or deleted."
-        super().__init__(status_code=403, message=message)
-
 class UserEmailNotFoundException(BaseHTTPException):
     def __init__(self, email: str):
         message = f"User with email {email} not found."
@@ -99,11 +94,6 @@ class AlreadyGroupMemberException(BaseHTTPException):
 class LastGroupMemberException(BaseHTTPException):
     def __init__(self):
         message = "The last member cannot leave the group; delete the group instead."
-        super().__init__(status_code=400, message=message)
-
-class ReservedGroupNameException(BaseHTTPException):
-    def __init__(self, name: str):
-        message = f"The group name '{name}' is reserved."
         super().__init__(status_code=400, message=message)
 
 class ReminderNotFoundException(BaseHTTPException):

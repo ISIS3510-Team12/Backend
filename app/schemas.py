@@ -155,7 +155,6 @@ class GroupResponse(BaseModel):
     description: str
     users: list[UserResponse]
     pending_task_count: int = 0
-    is_personal: bool = False
 
 class ProjectCreate(BaseModel):
     name: str
