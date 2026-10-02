@@ -179,10 +179,12 @@ class TaskService:
         due_within_days: int | None = None,
         mine: bool = False,
         priority: bool = False,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> list[TaskResponse]:
         """Every task in any group the user belongs to, with optional filters."""
         tasks = self.repository.get_all_tasks_by_user_groups(
-            user_id, due_within_days, mine, priority
+            user_id, due_within_days, mine, priority, start_date, end_date
         )
         responses: list[TaskResponse] = []
         for task in tasks:

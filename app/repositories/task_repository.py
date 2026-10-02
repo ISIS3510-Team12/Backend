@@ -130,6 +130,8 @@ class TaskRepository(BaseRepository):
         due_within_days: int | None = None,
         mine: bool = False,
         priority: bool = False,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> list[Task]:
         """Every task in any group the user belongs to, with optional filters."""
         statement = (
@@ -159,6 +161,12 @@ class TaskRepository(BaseRepository):
                 Task.deadline >= now,
                 Task.deadline <= deadline_limit,
             )
+
+        if start_date:
+            statement = statement.where(Task.deadline >= start_date)
+            
+        if end_date:
+            statement = statement.where(Task.deadline <= end_date)
 
         return list(self.db.exec(statement).all())
 
