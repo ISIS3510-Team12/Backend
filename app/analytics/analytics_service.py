@@ -158,8 +158,9 @@ class AnalyticsService:
         writer = csv.writer(buffer)
         writer.writerow([
             "task_type",
-            "count",
+            "task_count",
         ])
         for row in rows:
-            writer.writerow([row.task_type, row.count])
+            writer.writerow([row["task_type"], row["task_count"]])
+           
         return buffer.getvalue()
