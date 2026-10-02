@@ -67,6 +67,16 @@ class UserService:
         self.repository.db.add(db_preferences)
         self.repository.db.commit()
         
+    def get_or_create_user_preferences(self, user_id: str) -> UserPreferences:
+        preferences = self.repository.get_user_preferences(user_id)
+        if preferences:
+            return preferences
+        preferences = UserPreferences(user_id=user_id)
+        self.repository.db.add(preferences)
+        self.repository.db.commit()
+        self.repository.db.refresh(preferences)
+        return preferences
+
     def get_user_by_id(self, user_id: str) -> User | None:
         return self.repository.get_by_id(user_id)
 
