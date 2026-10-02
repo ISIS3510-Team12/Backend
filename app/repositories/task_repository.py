@@ -145,9 +145,7 @@ class TaskRepository(BaseRepository):
             assigned_task_ids = select(TaskAssignee.task_id).where(
                 TaskAssignee.user_id == user_id
             )
-            statement = statement.where(
-                or_(Task.user_id == user_id, Task.id.in_(assigned_task_ids))
-            )
+            statement = statement.where(Task.id.in_(assigned_task_ids))
 
         if priority:
             statement = statement.where(Task.is_priority)

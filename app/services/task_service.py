@@ -113,6 +113,18 @@ class TaskService:
                     related_ids.append(related_id)
             self.repository.replace_related_tasks(task, related_ids)
 
+    def assign_creator(self, task: Task, user_id: str) -> None:
+        """Ensure the creator is always one of the task's assignees."""
+        assignee_ids: list[str] = []
+        for assignee in task.assignees:
+            assignee_ids.append(assignee.user_id)
+
+        if user_id in assignee_ids:
+            return
+
+        assignee_ids.append(user_id)
+        self.repository.replace_assignees(task, assignee_ids)
+
     def create_task(self, user_id: int, data: TaskCreate) -> TaskResponse:
         project = None
         if data.project_id:
@@ -143,6 +155,7 @@ class TaskService:
         created_task = self.repository.create_task(task)
 
         self.apply_relationships(created_task, data)
+        self.assign_creator(created_task, user_id)
 
         self.register_event(
             TaskEventType.CREATED, created_task.status, created_task.id, user_id
