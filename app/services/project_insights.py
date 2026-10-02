@@ -76,8 +76,7 @@ class ProjectInsightsService:
         if started_at is None:
             return 0.0
 
-        elapsed_days = (now - started_at).total_seconds() / SECONDS_PER_DAY
-        if elapsed_days <= 0:
-            return 0.0
+        elapsed_days = (now.date() - started_at.date()).days
+        pace_days = max(elapsed_days, 1)
 
-        return completed_tasks / elapsed_days
+        return completed_tasks / pace_days
