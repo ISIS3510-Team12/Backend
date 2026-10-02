@@ -88,3 +88,23 @@ def get_average_task_completion_time_before_deadline(
             "Content-Disposition": 'attachment; filename="average_task_completion_time_before_deadline.csv"'
         },
     )
+
+@router.get("/most-frecuently-task-types", status_code=status.HTTP_200_OK)
+def get_most_frecuently_task_types(
+    service: AnalyticsServiceDep,
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "Which types of tasks are created most frequently by students?"
+
+    It returns a CSV file with the needed data.
+    """
+    csv_content = service.frecuently_task_types_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="most_frecuently_task_types.csv"'
+        },
+    )
