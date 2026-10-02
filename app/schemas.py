@@ -117,7 +117,7 @@ class TaskResponse(BaseModel):
     reminders: list[ReminderResponse] = []
 
 class TaskTodaySummaryResponse(BaseModel):
-    """Pending tasks of the user due by the end of the day, for location reminders."""
+    """Summary of pending tasks for today."""
     pending_count: int
     today_count: int
     overdue_count: int
