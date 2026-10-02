@@ -57,6 +57,18 @@ class UserPreferences(SQLModel, table=True):
     )
 
     
+class UserLocation(SQLModel, table=True):
+    """The place a user saved for location-based reminders (one per user)."""
+    user_id: str = Field(
+        foreign_key="user.user_id",
+        primary_key=True,
+    )
+    latitude: float
+    longitude: float
+    # Radius in meters around the saved place; capped at MAX_NOTIFY_WITHIN_METERS.
+    notify_within: int
+
+
 class Group(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
     name: str

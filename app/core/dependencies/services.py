@@ -8,8 +8,10 @@ from app.core.dependencies.repositories import (
     ProjectRepositoryDep,
     AnalyticsRepositoryDep,
     TelemetryRepositoryDep,
+    LocationRepositoryDep,
 )
 from app.services.notification_service import NotificationService
+from app.services.location_service import LocationService
 from app.services.user_service import UserService
 from app.services.task_service import TaskService
 from app.services.project_insights import ProjectInsightsService
@@ -98,4 +100,13 @@ def get_telemetry_service(repo: TelemetryRepositoryDep)-> TelemetryService:
 TelemetryServiceDep = Annotated[
     TelemetryService,
     Depends(get_telemetry_service),
+]
+
+
+def get_location_service(repo: LocationRepositoryDep) -> LocationService:
+    return LocationService(repo)
+
+LocationServiceDep = Annotated[
+    LocationService,
+    Depends(get_location_service),
 ]

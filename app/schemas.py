@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from pydantic import BaseModel
-from app.core.consts import TaskStatus
+from pydantic import BaseModel, Field
+from app.core.consts import MAX_NOTIFY_WITHIN_METERS, TaskStatus
 
 class UserCreate(BaseModel):
     first_name: str
@@ -190,3 +190,23 @@ class DeadlinePredictionResponse(BaseModel):
 class ScreenLoadEventCreate(BaseModel):
     screen: str
     load_time_ms: float
+
+class UserLocationUpsert(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    notify_within: int = Field(ge=1, le=MAX_NOTIFY_WITHIN_METERS)
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "latitude": 4.6014,
+                "longitude": -74.0661,
+                "notify_within": 500
+            }
+        }
+    }
+
+class UserLocationResponse(BaseModel):
+    latitude: float
+    longitude: float
+    notify_within: int
