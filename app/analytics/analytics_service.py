@@ -116,3 +116,38 @@ class AnalyticsService:
             ])
 
         return buffer.getvalue()
+    
+    def average_task_completion_time_before_deadline_csv(self) -> str:
+        rows = self.repository.get_task_completion_times()
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            "owner_id",
+            "average_completion_time_before_deadline_seconds",
+        ])
+        total_seconds = 0
+        count = 0
+        current_user_id = None
+
+        for row in rows:
+            if current_user_id is None:
+                current_user_id = row.owner_id
+
+            if row.owner_id != current_user_id:
+                if count > 0:
+                    average_seconds = total_seconds / count
+                else:
+                    average_seconds = 0
+                writer.writerow([current_user_id, round(average_seconds, 2)])
+                total_seconds = 0
+                count = 0
+                current_user_id = row.owner_id
+
+            seconds_before_deadline = (row.deadline - row.completed_at).total_seconds()
+            total_seconds += seconds_before_deadline
+            count += 1
+        
+        average_seconds = total_seconds / count if count > 0 else 0
+        writer.writerow([current_user_id, round(average_seconds, 2)])
+        
+        return buffer.getvalue()

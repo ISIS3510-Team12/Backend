@@ -130,3 +130,34 @@ class AnalyticsRepository(BaseRepository):
         )
 
         return list(self.db.exec(statement).all())
+    
+    def get_task_completion_deadlines(self) -> list:
+        """
+        One row per task that has a deadline and a completion event.
+        This is for the answer to the Business Question:
+        "On average, how much time before deadline do students complete their tasks?"
+        """
+        completed = (
+            select(
+                TaskEvent.task_id.label("task_id"),
+                func.min(TaskEvent.occurred_at).label("completed_at"),
+            )
+            .where(TaskEvent.event_type == TaskEventType.STATUS_CHANGED)
+            .where(TaskEvent.task_status == TaskStatus.COMPLETED)
+            .group_by(TaskEvent.task_id)
+            .subquery()
+        )
+
+        statement = (
+            select(
+                Task.id.label("task_id"),
+                Task.user_id.label("owner_id"),
+                completed.c.completed_at,
+                Task.deadline.label("deadline"),
+            )
+            .join(completed, completed.c.task_id == Task.id)
+            .where(Task.deadline.is_not(None))
+            .order_by(Task.user_id, Task.deadline, Task.id)
+        )
+
+        return list(self.db.exec(statement).all())
