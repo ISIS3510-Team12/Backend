@@ -2,7 +2,7 @@ from sqlalchemy import and_, func, or_
 from sqlmodel import select
 
 from . import BaseRepository
-from app.core.consts import PERSONAL_GROUP_NAME, TaskEventType, TaskStatus
+from app.core.consts import TaskEventType, TaskStatus
 from app.models import Group, Task, TaskEvent, UserGroup
 
 class TaskEventRepository(BaseRepository):
@@ -41,7 +41,6 @@ class TaskEventRepository(BaseRepository):
             .join(Group, Group.id == Task.group_id)
             .join(UserGroup, UserGroup.group_id == Task.group_id)
             .where(UserGroup.user_id == user_id)
-            .where(Group.name != PERSONAL_GROUP_NAME)
             .where(TaskEvent.event_type != TaskEventType.VIEWED)
             .where(
                 or_(
