@@ -15,6 +15,9 @@ class UserUpdate(BaseModel):
 class UserPreferencesUpdate(BaseModel):
     push_enabled: bool | None = None
 
+class UserPreferencesResponse(BaseModel):
+    push_enabled: bool
+
 class UserResponse(BaseModel):
     user_id: str
     first_name: str

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.core.dependencies.auth import FirebaseUser, CurrentUser
 from app.models import User
 from app.core.dependencies.services import UserServiceDep
-from app.schemas import UserCreate
+from app.schemas import UserCreate, UserPreferencesResponse, UserPreferencesUpdate
 
 router = APIRouter(
     prefix="/users",
@@ -53,5 +53,32 @@ def get_users(current_user: CurrentUser, service: UserServiceDep) -> list[User]:
     return service.get_users()
 
 
+@router.get(
+    "/preferences",
+    response_model=UserPreferencesResponse,
+)
+def get_user_preferences(
+    current_user: CurrentUser,
+    service: UserServiceDep,
+):
+    """
+    Get the preferences of the current user, creating the defaults if missing.
+    """
+    return service.get_or_create_user_preferences(current_user.user_id)
 
 
+@router.patch(
+    "/preferences",
+    response_model=UserPreferencesResponse,
+)
+def update_user_preferences(
+    request: UserPreferencesUpdate,
+    current_user: CurrentUser,
+    service: UserServiceDep,
+):
+    """
+    Update the preferences of the current user.
+    """
+    service.get_or_create_user_preferences(current_user.user_id)
+    service.update_user_preferences(current_user.user_id, request)
+    return service.get_or_create_user_preferences(current_user.user_id)
