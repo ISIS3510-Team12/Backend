@@ -69,3 +69,22 @@ def get_upcoming_tasks_due(
             "Content-Disposition": 'attachment; filename="upcoming_tasks_due.csv"'
         },
     )
+
+@router.get("/average-task-completion-time-before-deadline", status_code=status.HTTP_200_OK)
+def get_average_task_completion_time_before_deadline(
+    service: AnalyticsServiceDep,
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "What is the average time it takes users to complete tasks before their deadlines?"
+    It returns a CSV file with the needed data.
+    """
+    csv_content = service.average_task_completion_time_before_deadline_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="average_task_completion_time_before_deadline.csv"'
+        },
+    )
