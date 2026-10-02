@@ -119,6 +119,13 @@ class TaskResponse(BaseModel):
     related_tasks: list[TaskSummary] = []
     reminders: list[ReminderResponse] = []
 
+class TaskTodaySummaryResponse(BaseModel):
+    """Pending tasks of the user due by the end of the day, for location reminders."""
+    pending_count: int
+    today_count: int
+    overdue_count: int
+    titles: list[str] = []
+
 class TaskNotificationResponse(BaseModel):
     id: int
     task_id: int

@@ -168,6 +168,25 @@ class TaskRepository(BaseRepository):
 
         return list(self.db.exec(statement).all())
 
+    def get_pending_tasks_due_until(self, user_id: str, end: datetime) -> list[Task]:
+        """Unfinished tasks the user owns or is assigned to, with a deadline up to `end` (overdue included)."""
+        assigned_task_ids = select(TaskAssignee.task_id).where(
+            TaskAssignee.user_id == user_id
+        )
+        statement = (
+            select(Task)
+            .join(UserGroup, UserGroup.group_id == Task.group_id)
+            .where(
+                UserGroup.user_id == user_id,
+                or_(Task.user_id == user_id, Task.id.in_(assigned_task_ids)),
+                Task.status != TaskStatus.COMPLETED,
+                Task.deadline.is_not(None),
+                Task.deadline <= end,
+            )
+            .order_by(Task.deadline)
+        )
+        return list(self.db.exec(statement).all())
+
     def get_task_by_project(self, task_id: int, project_id: int):
         statement = (
             select(Task)

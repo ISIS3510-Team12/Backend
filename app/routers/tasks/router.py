@@ -12,6 +12,7 @@ from app.schemas import (
     ReminderUpdate,
     TaskCreate,
     TaskResponse,
+    TaskTodaySummaryResponse,
     TaskUpdate,
     TimeBlockCreate,
     TimeBlockResponse,
@@ -65,6 +66,15 @@ def get_all_tasks(
     end_date: datetime | None = None
 ):
     return service.get_all_tasks(current_user.user_id, due_within_days, mine, priority, start_date, end_date)
+
+@router.get("/today/summary", response_model=TaskTodaySummaryResponse, status_code=status.HTTP_200_OK)
+def get_today_summary(
+    start: datetime,
+    end: datetime,
+    current_user: CurrentUser,
+    service: TaskServiceDep
+):
+    return service.get_today_summary(current_user.user_id, start, end)
 
 @router.get("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def get_task_by_user(

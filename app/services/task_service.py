@@ -27,6 +27,7 @@ from app.schemas import (
     ReminderUpdate,
     TaskCreate,
     TaskResponse,
+    TaskTodaySummaryResponse,
     TaskUpdate,
     TimeBlockCreate,
     TimeBlockResponse,
@@ -203,6 +204,21 @@ class TaskService:
         for task in tasks:
             responses.append(to_task_response(task))
         return responses
+
+    def get_today_summary(
+        self, user_id: str, start: datetime, end: datetime
+    ) -> TaskTodaySummaryResponse:
+        """Deadlines are stored without timezone, so the client's local day bounds are compared as-is."""
+        start = start.replace(tzinfo=None)
+        end = end.replace(tzinfo=None)
+        tasks = self.repository.get_pending_tasks_due_until(user_id, end)
+        overdue = [task for task in tasks if task.deadline < start]
+        return TaskTodaySummaryResponse(
+            pending_count=len(tasks),
+            today_count=len(tasks) - len(overdue),
+            overdue_count=len(overdue),
+            titles=[task.title for task in tasks],
+        )
 
     def get_task_by_user(self, task_id: int, user_id: int) -> TaskResponse:
         task = self.get_task_or_raise(task_id, user_id)
