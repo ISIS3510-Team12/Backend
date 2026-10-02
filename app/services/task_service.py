@@ -248,6 +248,7 @@ class TaskService:
         updated_task = self.repository.update_task(task, fields)
 
         self.apply_relationships(updated_task, data)
+        self.assign_creator(updated_task, updated_task.user_id)
 
         self.register_event(
             TaskEventType.UPDATED, updated_task.status, updated_task.id, user_id
