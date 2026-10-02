@@ -151,3 +151,15 @@ class AnalyticsService:
         writer.writerow([current_user_id, round(average_seconds, 2)])
         
         return buffer.getvalue()
+
+    def frecuently_task_types_csv(self) -> str:
+        rows = self.repository.get_frecuently_task_types()
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            "task_type",
+            "count",
+        ])
+        for row in rows:
+            writer.writerow([row.task_type, row.count])
+        return buffer.getvalue()

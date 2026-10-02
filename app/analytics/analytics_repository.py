@@ -161,3 +161,20 @@ class AnalyticsRepository(BaseRepository):
         )
 
         return list(self.db.exec(statement).all())
+
+    def get_frecuently_task_types(self) -> list:
+        """
+        One row per task type with the count of tasks of that type.
+        This is for the answer to the Business Question:
+        "Which types of tasks are created most frequently by students?"
+        """
+        statement = (
+            select(
+                Task.task_type.label("task_type"),
+                func.count(Task.id).label("task_count"),
+            )
+            .group_by(Task.task_type)
+            .order_by(func.count(Task.id).desc())
+        )
+
+        return list(self.db.exec(statement).all())
