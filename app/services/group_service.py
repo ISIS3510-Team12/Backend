@@ -135,3 +135,26 @@ class GroupService:
         if self.repository.count_members(group.id) <= 1:
             raise LastGroupMemberException()
         self.repository.remove_user_from_group(user_id, group.id)
+
+    def remove_member(self, group_id: int, current_user_id: str, member_user_id: str) -> None:
+        group = self._get_group_or_raise(
+            group_id,
+            current_user_id,
+        )
+
+        if group.name == PERSONAL_GROUP_NAME:
+            raise PersonalGroupProtectedException()
+
+        if not any(
+            member.user_id == member_user_id
+            for member in group.users
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User is not a member of this group.",
+            )
+
+        if self.repository.count_members(group.id) <= 1:
+            raise LastGroupMemberException()
+
+        self.repository.remove_user_from_group(member_user_id, group.id)

@@ -45,3 +45,12 @@ def leave_group(group_id: int, current_user: CurrentUser, service: GroupServiceD
     service.leave_group(group_id, current_user.user_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.delete("/{group_id}/members/{member_user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_group_member(group_id: int, member_user_id: str, current_user: CurrentUser, service: GroupServiceDep):
+    service.remove_member(
+        group_id,
+        current_user.user_id,
+        member_user_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
