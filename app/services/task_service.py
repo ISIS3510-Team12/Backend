@@ -208,7 +208,7 @@ class TaskService:
     def get_today_summary(
         self, user_id: str, start: datetime, end: datetime
     ) -> TaskTodaySummaryResponse:
-        """Deadlines are stored without timezone, so the client's local day bounds are compared as-is."""
+        """Returns the summary of pending tasks for the given day."""
         start = start.replace(tzinfo=None)
         end = end.replace(tzinfo=None)
         tasks = self.repository.get_pending_tasks_due_until(user_id, end)

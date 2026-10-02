@@ -114,7 +114,7 @@ class TimeBlockNotFoundException(BaseHTTPException):
 
 class UserLocationNotFoundException(BaseHTTPException):
     """
-    Exception raised when a user has not saved a location yet.
+    Exception raised when a user has no saved location.
     """
     def __init__(self, user_id: str):
         message = f"User with ID {user_id} has no saved location."

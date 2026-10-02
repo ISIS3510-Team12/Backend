@@ -4,7 +4,7 @@ from app.models import UserLocation
 
 class LocationRepository(BaseRepository):
     """
-    LocationRepository class that provides database operations for the location a user saved.
+    LocationRepository class that provides database operations for user locations.
     """
 
     def get_by_user_id(self, user_id: str) -> UserLocation | None:
