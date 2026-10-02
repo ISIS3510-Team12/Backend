@@ -6,3 +6,4 @@ from .groups import router as groups_router
 from .telemetry import router as telemetry_router
 from .analytics import router as analytics_router
 from .notifications import router as notifications_router
+from .locations import router as locations_router

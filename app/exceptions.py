@@ -121,3 +121,11 @@ class TimeBlockNotFoundException(BaseHTTPException):
     def __init__(self, time_block_id: int):
         message = f"Time block with ID {time_block_id} not found."
         super().__init__(status_code=404, message=message)
+
+class UserLocationNotFoundException(BaseHTTPException):
+    """
+    Exception raised when a user has not saved a location yet.
+    """
+    def __init__(self, user_id: str):
+        message = f"User with ID {user_id} has no saved location."
+        super().__init__(status_code=404, message=message)
