@@ -1,5 +1,6 @@
 from fastapi import APIRouter, File, HTTPException, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
+from datetime import datetime
 
 from app.core.consts import ALLOWED_PHOTO_CONTENT_TYPES, MAX_PHOTO_SIZE_BYTES, TaskStatus
 from app.core.dependencies.auth import CurrentUser
@@ -59,9 +60,11 @@ def get_all_tasks(
     service: TaskServiceDep,
     due_within_days: int | None = None,
     mine: bool = False,
-    priority: bool = False
+    priority: bool = False,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None
 ):
-    return service.get_all_tasks(current_user.user_id, due_within_days, mine, priority)
+    return service.get_all_tasks(current_user.user_id, due_within_days, mine, priority, start_date, end_date)
 
 @router.get("/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK)
 def get_task_by_user(
