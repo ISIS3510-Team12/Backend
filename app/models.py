@@ -259,3 +259,22 @@ class ScreenLoadEvent(SQLModel, table=True):
     )
 
     user: User = Relationship()
+
+
+class TaskDetailSession(SQLModel, table=True):
+    """A visit to a task detail screen."""
+    id: int = Field(primary_key=True, index=True)
+
+    opened_at: datetime
+    closed_at: datetime
+    progress_updated: bool = False
+
+    task_id: int = Field(
+        foreign_key="task.id",
+        index=True,
+    )
+
+    user_id: str = Field(
+        foreign_key="user.user_id",
+        index=True,
+    )

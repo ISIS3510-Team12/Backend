@@ -7,6 +7,7 @@ from app.models import (
     Reminder,
     Task,
     TaskAssignee,
+    TaskDetailSession,
     TaskEvent,
     TaskRelation,
     TimeBlock,
@@ -228,6 +229,7 @@ class TaskRepository(BaseRepository):
         self.db.exec(delete(TimeBlock).where(TimeBlock.task_id == task_id))
         self.db.exec(delete(Attachment).where(Attachment.task_id == task_id))
         self.db.exec(delete(TaskEvent).where(TaskEvent.task_id == task_id))
+        self.db.exec(delete(TaskDetailSession).where(TaskDetailSession.task_id == task_id))
         self.db.exec(delete(Task).where(Task.id == task_id))
         self.db.commit()
 
