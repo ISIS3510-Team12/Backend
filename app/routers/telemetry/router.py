@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 
 from app.core.dependencies.auth import CurrentUser
 from app.core.dependencies.services import TaskServiceDep, TelemetryServiceDep
-from app.schemas import ScreenLoadEventCreate
+from app.schemas import ScreenLoadEventCreate, TaskDetailSessionCreate, TaskDetailSessionResponse
 
 router = APIRouter(
     prefix="/telemetry",
@@ -30,3 +30,12 @@ def register_screen_load(
     service: TelemetryServiceDep,
 ):
     return service.register_screen_load(current_user.user_id, data)
+
+
+@router.post("/task-detail-session", response_model=TaskDetailSessionResponse, status_code=status.HTTP_201_CREATED)
+def register_task_detail_session(
+    data: TaskDetailSessionCreate,
+    current_user: CurrentUser,
+    service: TelemetryServiceDep,
+):
+    return service.register_task_detail_session(current_user.user_id, data)

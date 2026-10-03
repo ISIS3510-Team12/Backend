@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, literal, union_all
+from sqlalchemy import Date, case, cast, func, literal, union_all
 from sqlmodel import select
 
-from app.core.consts import TaskEventType, TaskStatus
+from app.core.consts import MIN_TASK_DETAIL_SESSION_SECONDS, TaskEventType, TaskStatus
 from app.repositories import BaseRepository
 from app.models import (
     Group,
@@ -11,6 +11,7 @@ from app.models import (
     ScreenLoadEvent,
     Task,
     TaskAssignee,
+    TaskDetailSession,
     TaskEvent,
 )
 
@@ -188,3 +189,33 @@ class AnalyticsRepository(BaseRepository):
             })
 
         return result
+
+
+    def get_task_detail_sessions_per_week(self) -> list:
+        """
+        One row per user and week (weeks start on Monday) with how many task
+        detail visits were closed, and how many of those without updating the
+        task's progress. Visits shorter than MIN_TASK_DETAIL_SESSION_SECONDS are ignored.
+        This is the answer to the Business Question:
+        "How many times per week does a user open a task detail and close it without updating its progress?"
+        """
+        week_start = cast(func.date_trunc("week", TaskDetailSession.opened_at), Date)
+
+        statement = (
+            select(
+                TaskDetailSession.user_id.label("user_id"),
+                week_start.label("week_start"),
+                func.count(TaskDetailSession.id).label("sessions_total"),
+                func.sum(
+                    case((TaskDetailSession.progress_updated.is_(False), 1), else_=0)
+                ).label("sessions_without_update"),
+            )
+            .where(
+                TaskDetailSession.closed_at - TaskDetailSession.opened_at
+                >= timedelta(seconds=MIN_TASK_DETAIL_SESSION_SECONDS)
+            )
+            .group_by(TaskDetailSession.user_id, week_start)
+            .order_by(week_start, TaskDetailSession.user_id)
+        )
+
+        return list(self.db.exec(statement).all())

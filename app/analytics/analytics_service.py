@@ -162,3 +162,26 @@ class AnalyticsService:
             writer.writerow([row["task_type"], row["task_count"]])
            
         return buffer.getvalue()
+
+    def task_detail_closed_without_update_csv(self) -> str:
+        rows = self.repository.get_task_detail_sessions_per_week()
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            "user_id",
+            "week_start",
+            "sessions_total",
+            "sessions_without_update",
+            "abandon_ratio",
+        ])
+        for row in rows:
+            sessions_without_update = int(row.sessions_without_update)
+            writer.writerow([
+                row.user_id,
+                row.week_start.isoformat(),
+                row.sessions_total,
+                sessions_without_update,
+                round(sessions_without_update / row.sessions_total, 4),
+            ])
+
+        return buffer.getvalue()
