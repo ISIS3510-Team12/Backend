@@ -116,7 +116,7 @@ class AnalyticsService:
         return buffer.getvalue()
     
     def average_task_completion_time_before_deadline_csv(self) -> str:
-        rows = self.repository.get_task_completion_times()
+        rows = self.repository.get_task_completion_deadlines()
         buffer = StringIO()
         writer = csv.writer(buffer)
         writer.writerow([

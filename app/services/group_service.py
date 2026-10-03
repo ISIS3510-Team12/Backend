@@ -1,21 +1,14 @@
 from fastapi import HTTPException, status
 
-from app.core.consts import PERSONAL_GROUP_NAME
 from app.exceptions import (
     AlreadyGroupMemberException,
     LastGroupMemberException,
-    PersonalGroupProtectedException,
-    ReservedGroupNameException,
     UserEmailNotFoundException,
 )
 from app.models import Group
 from app.repositories.group_repository import GroupRepository
 from app.schemas import GroupCreate, GroupMemberAdd, GroupUpdate, GroupResponse
 from app.services.mappers import to_group_response
-
-
-def is_reserved_group_name(name: str) -> bool:
-    return name.strip().casefold() == PERSONAL_GROUP_NAME.casefold()
 
 
 class GroupService:
@@ -27,9 +20,6 @@ class GroupService:
         user_id: str,
         data: GroupCreate,
     ) -> GroupResponse:
-        if is_reserved_group_name(data.name):
-            raise ReservedGroupNameException(data.name)
-
         group = Group(
             name=data.name,
             description=data.description,
@@ -53,8 +43,6 @@ class GroupService:
         self,
         user_id: str,
     ) -> list[GroupResponse]:
-        self.repository.get_or_create_personal_group(user_id)
-
         groups = self.repository.get_groups_by_user_id(user_id)
         pending_counts = self.repository.count_pending_tasks_by_group()
         responses: list[GroupResponse] = []
@@ -109,12 +97,6 @@ class GroupService:
                 detail=f"Group with ID {group_id} not found.",
             )
 
-        if group.name == PERSONAL_GROUP_NAME:
-            raise PersonalGroupProtectedException()
-
-        if data.name is not None and is_reserved_group_name(data.name):
-            raise ReservedGroupNameException(data.name)
-
         updated = self.repository.update_group(
             group,
             data.model_dump(exclude_unset=True),
@@ -137,9 +119,6 @@ class GroupService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Group with ID {group_id} not found.",
             )
-
-        if group.name == PERSONAL_GROUP_NAME:
-            raise PersonalGroupProtectedException()
 
         self.repository.delete_group(group)
 
@@ -172,9 +151,6 @@ class GroupService:
             user_id,
         )
 
-        if group.name == PERSONAL_GROUP_NAME:
-            raise PersonalGroupProtectedException()
-
         new_member = self.repository.get_user_by_email(data.email)
 
         if new_member is None:
@@ -206,9 +182,6 @@ class GroupService:
             user_id,
         )
 
-        if group.name == PERSONAL_GROUP_NAME:
-            raise PersonalGroupProtectedException()
-
         if self.repository.count_members(group.id) <= 1:
             raise LastGroupMemberException()
 
@@ -228,9 +201,6 @@ class GroupService:
             current_user_id,
         )
 
-        if group.name == PERSONAL_GROUP_NAME:
-            raise PersonalGroupProtectedException()
-
         if not any(
             member.user_id == member_user_id
             for member in group.users
@@ -247,3 +217,4 @@ class GroupService:
             member_user_id,
             group.id,
         )
+    
