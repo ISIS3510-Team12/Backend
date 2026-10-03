@@ -139,12 +139,17 @@ class TaskNotificationResponse(BaseModel):
 class GroupCreate(BaseModel):
     name: str
     description: str
+    user_ids: list[str] = Field(default_factory=list)
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "name": "Group name #1",
-                "description": "Course project group"
+                "description": "Course project group",
+                "user_ids": [
+                    "user-id-1",
+                    "user-id-2"
+                ]
             }
         }
     }
