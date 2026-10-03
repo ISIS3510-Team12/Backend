@@ -108,3 +108,23 @@ def get_most_frecuently_task_types(
             "Content-Disposition": 'attachment; filename="most_frecuently_task_types.csv"'
         },
     )
+
+
+@router.get("/task-detail-closed-without-update", status_code=status.HTTP_200_OK)
+def get_task_detail_closed_without_update(
+    service: AnalyticsServiceDep,
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "How many times per week does a user open a task detail and close it without updating its progress?"
+    It returns a CSV file with one row per user and week.
+    """
+    csv_content = service.task_detail_closed_without_update_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="task_detail_closed_without_update.csv"'
+        },
+    )

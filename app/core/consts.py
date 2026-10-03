@@ -23,3 +23,6 @@ ALLOWED_PHOTO_CONTENT_TYPES = frozenset(
 SECONDS_PER_DAY = 86400
 
 MAX_NOTIFY_WITHIN_METERS = 1000
+
+# Task detail visits shorter than this are treated as accidental taps.
+MIN_TASK_DETAIL_SESSION_SECONDS = 1
