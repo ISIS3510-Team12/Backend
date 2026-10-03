@@ -94,8 +94,8 @@ NotificationServiceDep = Annotated[
 ]
 
 
-def get_telemetry_service(repo: TelemetryRepositoryDep)-> TelemetryService:
-    return TelemetryService(repo)
+def get_telemetry_service(repo: TelemetryRepositoryDep, task_repo: TaskRepositoryDep)-> TelemetryService:
+    return TelemetryService(repo, task_repo)
 
 TelemetryServiceDep = Annotated[
     TelemetryService,

@@ -1,4 +1,4 @@
-from app.models import ScreenLoadEvent
+from app.models import ScreenLoadEvent, TaskDetailSession
 from app.repositories import BaseRepository
 
 
@@ -10,3 +10,10 @@ class TelemetryRepository(BaseRepository):
         self.db.refresh(event)
 
         return event
+
+    def register_task_detail_session(self, session: TaskDetailSession) -> TaskDetailSession:
+        self.db.add(session)
+        self.db.commit()
+        self.db.refresh(session)
+
+        return session

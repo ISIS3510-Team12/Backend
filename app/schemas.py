@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from app.core.consts import MAX_NOTIFY_WITHIN_METERS, TaskStatus
 
 class UserCreate(BaseModel):
@@ -204,6 +204,36 @@ class DeadlinePredictionResponse(BaseModel):
 class ScreenLoadEventCreate(BaseModel):
     screen: str
     load_time_ms: float
+
+class TaskDetailSessionCreate(BaseModel):
+    task_id: int
+    opened_at: datetime
+    closed_at: datetime
+    progress_updated: bool = False
+
+    @model_validator(mode="after")
+    def closed_after_opened(self):
+        if self.closed_at < self.opened_at:
+            raise ValueError("closed_at must not be before opened_at")
+        return self
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "task_id": 1,
+                "opened_at": "2026-10-03T10:00:00",
+                "closed_at": "2026-10-03T10:00:12",
+                "progress_updated": False
+            }
+        }
+    }
+
+class TaskDetailSessionResponse(BaseModel):
+    id: int
+    task_id: int
+    opened_at: datetime
+    closed_at: datetime
+    progress_updated: bool
 
 class UserLocationUpsert(BaseModel):
     latitude: float = Field(ge=-90, le=90)
