@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.core.consts import PERSONAL_GROUP_NAME, AttachmentKind
+from app.core.consts import AttachmentKind
 from app.models import Group, Project, Reminder, Task, TimeBlock, User
 from app.schemas import (
     GroupResponse,
@@ -138,7 +138,6 @@ def to_group_response(group: Group, pending_task_count: int = 0) -> GroupRespons
         description=group.description,
         users=users,
         pending_task_count=pending_task_count,
-        is_personal=group.name == PERSONAL_GROUP_NAME,
     )
 
 

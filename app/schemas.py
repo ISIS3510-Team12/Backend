@@ -119,6 +119,13 @@ class TaskResponse(BaseModel):
     related_tasks: list[TaskSummary] = []
     reminders: list[ReminderResponse] = []
 
+class TaskTodaySummaryResponse(BaseModel):
+    """Summary of pending tasks for today."""
+    pending_count: int
+    today_count: int
+    overdue_count: int
+    titles: list[str] = []
+
 class TaskNotificationResponse(BaseModel):
     id: int
     task_id: int
@@ -155,7 +162,6 @@ class GroupResponse(BaseModel):
     description: str
     users: list[UserResponse]
     pending_task_count: int = 0
-    is_personal: bool = False
 
 class ProjectCreate(BaseModel):
     name: str

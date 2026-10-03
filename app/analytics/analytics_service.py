@@ -3,7 +3,7 @@ from datetime import datetime
 from io import StringIO
 
 from app.analytics.analytics_repository import AnalyticsRepository
-from app.core.consts import PERSONAL_GROUP_NAME, SECONDS_PER_DAY
+from app.core.consts import SECONDS_PER_DAY
 
 
 class AnalyticsService:
@@ -87,7 +87,6 @@ class AnalyticsService:
             "days_until_due",
             "group_id",
             "group_name",
-            "is_personal_group",
             "project_id",
             "project_name",
             "generated_at",
@@ -109,7 +108,6 @@ class AnalyticsService:
                 round(days_until_due, 2),
                 row.group_id,
                 row.group_name,
-                row.group_name == PERSONAL_GROUP_NAME,
                 row.project_id,
                 row.project_name,
                 now.isoformat(),

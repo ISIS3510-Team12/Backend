@@ -145,9 +145,7 @@ class TaskRepository(BaseRepository):
             assigned_task_ids = select(TaskAssignee.task_id).where(
                 TaskAssignee.user_id == user_id
             )
-            statement = statement.where(
-                or_(Task.user_id == user_id, Task.id.in_(assigned_task_ids))
-            )
+            statement = statement.where(Task.id.in_(assigned_task_ids))
 
         if priority:
             statement = statement.where(Task.is_priority)
@@ -168,6 +166,25 @@ class TaskRepository(BaseRepository):
         if end_date:
             statement = statement.where(Task.deadline <= end_date)
 
+        return list(self.db.exec(statement).all())
+
+    def get_pending_tasks_due_until(self, user_id: str, end: datetime) -> list[Task]:
+        """Pending tasks of the user with a deadline up to the given date."""
+        assigned_task_ids = select(TaskAssignee.task_id).where(
+            TaskAssignee.user_id == user_id
+        )
+        statement = (
+            select(Task)
+            .join(UserGroup, UserGroup.group_id == Task.group_id)
+            .where(
+                UserGroup.user_id == user_id,
+                or_(Task.user_id == user_id, Task.id.in_(assigned_task_ids)),
+                Task.status != TaskStatus.COMPLETED,
+                Task.deadline.is_not(None),
+                Task.deadline <= end,
+            )
+            .order_by(Task.deadline)
+        )
         return list(self.db.exec(statement).all())
 
     def get_task_by_project(self, task_id: int, project_id: int):

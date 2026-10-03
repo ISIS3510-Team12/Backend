@@ -27,6 +27,7 @@ from app.schemas import (
     ReminderUpdate,
     TaskCreate,
     TaskResponse,
+    TaskTodaySummaryResponse,
     TaskUpdate,
     TimeBlockCreate,
     TimeBlockResponse,
@@ -113,6 +114,18 @@ class TaskService:
                     related_ids.append(related_id)
             self.repository.replace_related_tasks(task, related_ids)
 
+    def assign_creator(self, task: Task, user_id: str) -> None:
+        """Ensure the creator is always one of the task's assignees."""
+        assignee_ids: list[str] = []
+        for assignee in task.assignees:
+            assignee_ids.append(assignee.user_id)
+
+        if user_id in assignee_ids:
+            return
+
+        assignee_ids.append(user_id)
+        self.repository.replace_assignees(task, assignee_ids)
+
     def create_task(self, user_id: int, data: TaskCreate) -> TaskResponse:
         project = None
         if data.project_id:
@@ -143,6 +156,7 @@ class TaskService:
         created_task = self.repository.create_task(task)
 
         self.apply_relationships(created_task, data)
+        self.assign_creator(created_task, user_id)
 
         self.register_event(
             TaskEventType.CREATED, created_task.status, created_task.id, user_id
@@ -191,6 +205,21 @@ class TaskService:
             responses.append(to_task_response(task))
         return responses
 
+    def get_today_summary(
+        self, user_id: str, start: datetime, end: datetime
+    ) -> TaskTodaySummaryResponse:
+        """Returns the summary of pending tasks for the given day."""
+        start = start.replace(tzinfo=None)
+        end = end.replace(tzinfo=None)
+        tasks = self.repository.get_pending_tasks_due_until(user_id, end)
+        overdue = [task for task in tasks if task.deadline < start]
+        return TaskTodaySummaryResponse(
+            pending_count=len(tasks),
+            today_count=len(tasks) - len(overdue),
+            overdue_count=len(overdue),
+            titles=[task.title for task in tasks],
+        )
+
     def get_task_by_user(self, task_id: int, user_id: int) -> TaskResponse:
         task = self.get_task_or_raise(task_id, user_id)
         self.register_event(TaskEventType.VIEWED, task.status, task_id, user_id)
@@ -235,6 +264,7 @@ class TaskService:
         updated_task = self.repository.update_task(task, fields)
 
         self.apply_relationships(updated_task, data)
+        self.assign_creator(updated_task, updated_task.user_id)
 
         self.register_event(
             TaskEventType.UPDATED, updated_task.status, updated_task.id, user_id

@@ -2,11 +2,7 @@ from sqlalchemy import func, or_
 from sqlmodel import delete, select
 
 from . import BaseRepository
-from app.core.consts import (
-    PERSONAL_GROUP_DESCRIPTION,
-    PERSONAL_GROUP_NAME,
-    TaskStatus,
-)
+from app.core.consts import TaskStatus
 from app.models import (
     Attachment,
     Group,
@@ -85,35 +81,8 @@ class GroupRepository(BaseRepository):
     def get_groups_by_user_id(self, user_id: str) -> list[Group]:
         user = self.db.get(User, user_id)
         if user:
-            return sorted(
-                user.groups,
-                key=lambda group: group.name != PERSONAL_GROUP_NAME,
-            )
+            return list(user.groups)
         return []
-
-    def get_personal_group(self, user_id: str) -> Group | None:
-        statement = (
-            select(Group)
-            .join(UserGroup, UserGroup.group_id == Group.id)
-            .where(
-                UserGroup.user_id == user_id,
-                Group.name == PERSONAL_GROUP_NAME,
-            )
-        )
-        return self.db.exec(statement).first()
-
-    def get_or_create_personal_group(self, user_id: str) -> Group:
-        group = self.get_personal_group(user_id)
-        if group is not None:
-            return group
-        group = self.create_group(
-            Group(
-                name=PERSONAL_GROUP_NAME,
-                description=PERSONAL_GROUP_DESCRIPTION,
-            )
-        )
-        self.add_user_to_group(user_id, group.id)
-        return group
 
     def get_projects_by_group_id(
         self,
