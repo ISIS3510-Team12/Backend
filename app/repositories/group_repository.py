@@ -145,3 +145,25 @@ class GroupRepository(BaseRepository):
         if user_group is not None:
             self.db.delete(user_group)
             self.db.commit()
+            
+    def create_group_with_members(self, group: Group, user_ids: list[str]) -> Group:
+        try:
+            self.db.add(group)
+            self.db.flush()
+
+            for user_id in user_ids:
+                self.db.add(
+                    UserGroup(
+                        user_id=user_id,
+                        group_id=group.id,
+                    )
+                )
+
+            self.db.commit()
+            self.db.refresh(group)
+
+            return group
+
+        except Exception:
+            self.db.rollback()
+            raise
