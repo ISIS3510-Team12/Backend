@@ -128,3 +128,24 @@ def get_task_detail_closed_without_update(
             "Content-Disposition": 'attachment; filename="task_detail_closed_without_update.csv"'
         },
     )
+
+    
+@router.get("/task-updates-concentration-periods", status_code=status.HTTP_200_OK)
+def get_task_updates_concentration_periods(
+    service: AnalyticsServiceDep,
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "What are the time periods with the highest concentration of task updates on the platform?"
+
+    It returns a CSV file with the needed data.
+    """
+    csv_content = service.task_updates_concentration_periods_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="task_updates_concentration_periods.csv"'
+        },
+    )

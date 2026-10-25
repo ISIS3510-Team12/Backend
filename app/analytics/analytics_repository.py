@@ -190,7 +190,6 @@ class AnalyticsRepository(BaseRepository):
 
         return result
 
-
     def get_task_detail_sessions_per_week(self) -> list:
         """
         One row per user and week (weeks start on Monday) with how many task
@@ -219,3 +218,31 @@ class AnalyticsRepository(BaseRepository):
         )
 
         return list(self.db.exec(statement).all())
+
+    def get_task_updates_concentration_periods(self) -> list:
+        """
+        One row per time period with the count of task updates in that period.
+        This is for the answer to the Business Question:
+        "What are the time periods with the highest concentration of task updates on the platform?"
+        """
+        statement = (
+            select(
+                func.date_trunc("hour", TaskEvent.occurred_at).label("period"),
+                func.count(TaskEvent.id).label("task_update_count"),
+            )
+            .where(TaskEvent.event_type == TaskEventType.STATUS_CHANGED)
+            .group_by(func.date_trunc("hour", TaskEvent.occurred_at))
+            .order_by(func.count(TaskEvent.id).desc())
+        )
+
+        rows = self.db.exec(statement).all()
+
+        result = []
+
+        for period, task_update_count in rows:
+            result.append({
+                "period": period,
+                "task_update_count": task_update_count,
+            })
+
+        return result
