@@ -160,7 +160,7 @@ class AnalyticsService:
         ])
         for row in rows:
             writer.writerow([row["task_type"], row["task_count"]])
-           
+        
         return buffer.getvalue()
 
     def task_detail_closed_without_update_csv(self) -> str:
@@ -184,4 +184,17 @@ class AnalyticsService:
                 round(sessions_without_update / row.sessions_total, 4),
             ])
 
+        return buffer.getvalue()
+
+    
+    def task_updates_concentration_periods_csv(self) -> str:
+        rows = self.repository.get_task_updates_concentration_periods()
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            "period",
+            "task_update_count"
+        ])
+        for row in rows:
+            writer.writerow([row.period, row.task_update_count])
         return buffer.getvalue()
