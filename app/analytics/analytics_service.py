@@ -3,7 +3,7 @@ from datetime import datetime
 from io import StringIO
 
 from app.analytics.analytics_repository import AnalyticsRepository
-from app.core.consts import SECONDS_PER_DAY
+from app.core.consts import SECONDS_PER_DAY, TaskEventType
 
 
 class AnalyticsService:
@@ -193,8 +193,14 @@ class AnalyticsService:
         writer = csv.writer(buffer)
         writer.writerow([
             "period",
+            "event_type",
             "task_update_count"
         ])
+        
         for row in rows:
-            writer.writerow([row.period, row.task_update_count])
+            writer.writerow([
+                row["period"],
+                row["event_type"].name if isinstance(row["event_type"], TaskEventType) else str(row["event_type"]),
+                row["task_update_count"],
+            ])
         return buffer.getvalue()
