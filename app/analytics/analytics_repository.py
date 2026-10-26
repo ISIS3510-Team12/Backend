@@ -230,7 +230,6 @@ class AnalyticsRepository(BaseRepository):
                 func.date_trunc("hour", TaskEvent.occurred_at).label("period"),
                 func.count(TaskEvent.id).label("task_update_count"),
             )
-            .where(TaskEvent.event_type == TaskEventType.STATUS_CHANGED)
             .group_by(func.date_trunc("hour", TaskEvent.occurred_at))
             .order_by(func.count(TaskEvent.id).desc())
         )

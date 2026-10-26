@@ -196,5 +196,8 @@ class AnalyticsService:
             "task_update_count"
         ])
         for row in rows:
-            writer.writerow([row.period, row.task_update_count])
+            writer.writerow([
+                row["period"],
+                row["task_update_count"],
+            ])
         return buffer.getvalue()
