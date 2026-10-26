@@ -206,9 +206,6 @@ class TaskService:
     ) -> list[TaskResponse]:
         """
         Every task in any group the user belongs to, with optional filters.
-
-        ``include_overdue`` only affects the ``due_within_days`` window: it
-        includes pending tasks whose deadline has already passed.
         """
         tasks = self.repository.get_all_tasks_by_user_groups(
             user_id,
