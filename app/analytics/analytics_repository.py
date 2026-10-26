@@ -221,27 +221,32 @@ class AnalyticsRepository(BaseRepository):
 
     def get_task_updates_concentration_periods(self) -> list:
         """
-        One row per time period with the count of task updates in that period.
+        One row per time period and task event type with the count of task updates for that type in that period.
         This is for the answer to the Business Question:
         "What are the time periods with the highest concentration of task updates on the platform?"
+        It expands the analysis to include the type of task update, so we can see if there are specific types of updates that are more concentrated in certain periods.
         """
+        period = func.date_trunc("hour", TaskEvent.occurred_at)
+        
         statement = (
             select(
-                func.date_trunc("hour", TaskEvent.occurred_at).label("period"),
+                period.label("period"),
+                TaskEvent.event_type.label("event_type"),
                 func.count(TaskEvent.id).label("task_update_count"),
             )
-            .group_by(func.date_trunc("hour", TaskEvent.occurred_at))
-            .order_by(func.count(TaskEvent.id).desc())
+            .group_by(period, TaskEvent.event_type)
+            .order_by(period, TaskEvent.event_type)
         )
 
         rows = self.db.exec(statement).all()
 
         result = []
 
-        for period, task_update_count in rows:
+        for row in rows:
             result.append({
-                "period": period,
-                "task_update_count": task_update_count,
+                "period": row.period,
+                "event_type": row.event_type,
+                "task_update_count": row.task_update_count,
             })
 
         return result
