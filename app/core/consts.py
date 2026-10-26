@@ -12,6 +12,14 @@ class TaskEventType(StrEnum):
     STATUS_CHANGED = "status_changed"
     DELETED = "deleted"
 
+class NextTaskReason(StrEnum):
+    OVERDUE = "overdue"
+    DUE_TODAY = "due_today"
+    DUE_SOON = "due_soon"
+    PRIORITY = "priority"
+    NEEDS_HELP = "needs_help"
+    NEXT_DEADLINE = "next_deadline"
+
 class AttachmentKind(StrEnum):
     PHOTO = "photo"
 
@@ -21,6 +29,9 @@ ALLOWED_PHOTO_CONTENT_TYPES = frozenset(
 )
 
 SECONDS_PER_DAY = 86400
+
+# How far ahead the Next Task recommendation looks. Overdue tasks are included.
+NEXT_TASK_HORIZON_DAYS = 14
 
 MAX_NOTIFY_WITHIN_METERS = 1000
 

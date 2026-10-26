@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from datetime import datetime
 
@@ -60,12 +60,27 @@ def get_all_tasks(
     current_user: CurrentUser,
     service: TaskServiceDep,
     due_within_days: int | None = None,
+    include_overdue: bool = Query(
+        False,
+        description=(
+            "Only applies when due_within_days is set. Include pending tasks "
+            "whose deadline has already passed."
+        ),
+    ),
     mine: bool = False,
     priority: bool = False,
     start_date: datetime | None = None,
     end_date: datetime | None = None
 ):
-    return service.get_all_tasks(current_user.user_id, due_within_days, mine, priority, start_date, end_date)
+    return service.get_all_tasks(
+        current_user.user_id,
+        due_within_days=due_within_days,
+        include_overdue=include_overdue,
+        mine=mine,
+        priority=priority,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 @router.get("/today/summary", response_model=TaskTodaySummaryResponse, status_code=status.HTTP_200_OK)
 def get_today_summary(

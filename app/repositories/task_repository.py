@@ -129,12 +129,19 @@ class TaskRepository(BaseRepository):
         self,
         user_id: str,
         due_within_days: int | None = None,
+        include_overdue: bool = False,
         mine: bool = False,
         priority: bool = False,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> list[Task]:
-        """Every task in any group the user belongs to, with optional filters."""
+        """
+        Every task in any group the user belongs to, with optional filters.
+
+        include_overdue only applies when due_within_days is set. By
+        default the due window starts now; when enabled, pending tasks with a
+        deadline in the past are included too.
+        """
         statement = (
             select(Task)
             .options(selectinload(Task.project), selectinload(Task.attachments))
@@ -157,9 +164,10 @@ class TaskRepository(BaseRepository):
             statement = statement.where(
                 Task.status != TaskStatus.COMPLETED,
                 Task.deadline.is_not(None),
-                Task.deadline >= now,
                 Task.deadline <= deadline_limit,
             )
+            if not include_overdue:
+                statement = statement.where(Task.deadline >= now)
 
         if start_date:
             statement = statement.where(Task.deadline >= start_date)

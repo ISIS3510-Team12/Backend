@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
-from app.core.consts import MAX_NOTIFY_WITHIN_METERS, TaskStatus
+from app.core.consts import MAX_NOTIFY_WITHIN_METERS, NextTaskReason, TaskStatus
 
 class UserCreate(BaseModel):
     first_name: str
@@ -199,6 +199,27 @@ class DeadlinePredictionResponse(BaseModel):
     pace_tasks_per_day: float
     predicted_completion_date: datetime | None = None
     will_meet_deadline: bool
+
+
+class NextTask(BaseModel):
+    """
+    The task returned by the Next Task recommendation.
+    """
+    task_id: int
+    title: str
+    group_id: int
+    group_name: str
+    due_at: datetime | None = None
+    reason_code: NextTaskReason
+    reason_text: str
+
+
+class NextTaskResponse(BaseModel):
+    """
+    Result of the Next Task recommendation.
+    """
+    task: NextTask | None = None
+    message: str | None = None
 
 
 class ScreenLoadEventCreate(BaseModel):

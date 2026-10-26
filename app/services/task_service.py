@@ -1,11 +1,17 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.repositories.task_event_repository import TaskEventRepository
 from botocore.exceptions import ClientError
 from types_boto3_s3.client import S3Client
 from app.core.config import settings
-from app.core.consts import AttachmentKind, TaskEventType, TaskStatus
+from app.core.consts import (
+    AttachmentKind,
+    NEXT_TASK_HORIZON_DAYS,
+    NextTaskReason,
+    TaskEventType,
+    TaskStatus,
+)
 from app.models import Attachment, Reminder, Task, TaskEvent, TimeBlock
 from app.repositories.group_repository import GroupRepository
 from app.repositories.project_repository import ProjectRepository
@@ -22,6 +28,7 @@ from app.exceptions import (
     UserNotFoundException,
 )
 from app.schemas import (
+    NextTask,
     ReminderCreate,
     ReminderResponse,
     ReminderUpdate,
@@ -191,19 +198,142 @@ class TaskService:
         self,
         user_id: str,
         due_within_days: int | None = None,
+        include_overdue: bool = False,
         mine: bool = False,
         priority: bool = False,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> list[TaskResponse]:
-        """Every task in any group the user belongs to, with optional filters."""
+        """
+        Every task in any group the user belongs to, with optional filters.
+
+        ``include_overdue`` only affects the ``due_within_days`` window: it
+        includes pending tasks whose deadline has already passed.
+        """
         tasks = self.repository.get_all_tasks_by_user_groups(
-            user_id, due_within_days, mine, priority, start_date, end_date
+            user_id,
+            due_within_days,
+            include_overdue,
+            mine,
+            priority,
+            start_date,
+            end_date,
         )
         responses: list[TaskResponse] = []
         for task in tasks:
             responses.append(to_task_response(task))
         return responses
+
+    def earliest(self, tasks: list[Task]) -> Task:
+        """
+        Return the task with the earliest deadline.
+        """
+        # Start with the first task and look for an earlier deadline.
+        earliest = tasks[0]
+
+        for task in tasks:
+            if task.deadline is not None:
+                # Earlier deadline wins; the id breaks ties.
+                if earliest.deadline is None or task.deadline < earliest.deadline:
+                    earliest = task
+                elif task.deadline == earliest.deadline and task.id < earliest.id:
+                    earliest = task
+
+        return earliest
+
+    def get_next_task(self, user_id: str) -> NextTask | None:
+        """
+        Return the next task for the user, or None when there is nothing pending.
+        """
+        # Pending tasks assigned to the user, including overdue ones.
+        tasks = self.repository.get_all_tasks_by_user_groups(
+            user_id,
+            due_within_days=NEXT_TASK_HORIZON_DAYS,
+            include_overdue=True,
+            mine=True,
+        )
+        if not tasks:
+            return None
+
+        now = datetime.now()
+        tomorrow = (now + timedelta(days=1)).date()
+
+        # Stages are checked in this order.
+        overdue = []
+        due_today = []
+        due_tomorrow = []
+        priority = []
+        needs_help = []
+
+        for task in tasks:
+            if task.deadline is not None:
+                if task.deadline < now:
+                    overdue.append(task)
+                elif task.deadline.date() == now.date():
+                    due_today.append(task)
+                elif task.deadline.date() == tomorrow:
+                    due_tomorrow.append(task)
+
+            # These flags are only used when no date stage has tasks.
+            if task.is_priority:
+                priority.append(task)
+
+            if task.needs_help:
+                needs_help.append(task)
+
+        # The first non-empty stage wins.
+        if overdue:
+            task = self.earliest(overdue)
+            days = (now.date() - task.deadline.date()).days
+            if days <= 0:
+                reason_code = NextTaskReason.OVERDUE
+                reason_text = "Overdue today"
+            elif days == 1:
+                reason_code = NextTaskReason.OVERDUE
+                reason_text = "Overdue since yesterday"
+            else:
+                reason_code = NextTaskReason.OVERDUE
+                reason_text = f"Overdue by {days} days"
+        elif due_today:
+            task = self.earliest(due_today)
+            reason_code = NextTaskReason.DUE_TODAY
+            reason_text = "Due today"
+        elif due_tomorrow:
+            task = self.earliest(due_tomorrow)
+            reason_code = NextTaskReason.DUE_SOON
+            reason_text = "Due tomorrow"
+        elif priority:
+            task = self.earliest(priority)
+            reason_code = NextTaskReason.PRIORITY
+            reason_text = "Marked as priority"
+        elif needs_help:
+            task = self.earliest(needs_help)
+            reason_code = NextTaskReason.NEEDS_HELP
+            reason_text = "Marked as needing help"
+        else:
+            # Nothing urgent, fall back to the nearest deadline.
+            task = self.earliest(tasks)
+            if task.deadline is None:
+                reason_code = NextTaskReason.NEXT_DEADLINE
+                reason_text = "Next task on your list"
+            else:
+                days = (task.deadline.date() - now.date()).days
+                reason_code = NextTaskReason.NEXT_DEADLINE
+                reason_text = f"Due in {days} days"
+
+        # The card shows the group name next to the task.
+        group = self.group_repository.get_group_by_id(task.group_id, user_id)
+
+        # Use an empty name if the group was deleted.
+        return NextTask(
+            task_id=task.id,
+            title=task.title,
+            group_id=task.group_id,
+            group_name=group.name if group is not None else "",
+            due_at=task.deadline,
+            reason_code=reason_code,
+            reason_text=reason_text,
+        )
 
     def get_today_summary(
         self, user_id: str, start: datetime, end: datetime
