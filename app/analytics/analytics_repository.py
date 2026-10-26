@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import Date, case, cast, func, literal, union_all
+from sqlalchemy import Date, case, cast, func, literal, union_all, Integer
 from sqlmodel import select
 
 from app.core.consts import MIN_TASK_DETAIL_SESSION_SECONDS, TaskEventType, TaskStatus
@@ -226,7 +226,10 @@ class AnalyticsRepository(BaseRepository):
         "What are the time periods with the highest concentration of task updates on the platform?"
         It expands the analysis to include the type of task update, so we can see if there are specific types of updates that are more concentrated in certain periods.
         """
-        period = func.date_trunc("hour", TaskEvent.occurred_at)
+        period = cast(
+            func.extract("hour", TaskEvent.occurred_at),
+            Integer,
+        )
         
         statement = (
             select(
