@@ -199,7 +199,7 @@ class AnalyticsService:
         
         for row in rows:
             writer.writerow([
-                row["period"],
+                f"{row['period']:02d}:00",
                 row["event_type"].name if isinstance(row["event_type"], TaskEventType) else str(row["event_type"]),
                 row["task_update_count"],
             ])
