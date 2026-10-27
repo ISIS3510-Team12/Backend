@@ -214,3 +214,24 @@ def get_days_since_last_progress(
             "Content-Disposition": 'attachment; filename="days_since_last_progress.csv"'
         },
     )
+
+
+@router.get("/task-reopen-frequency", status_code=status.HTTP_200_OK)
+def get_task_reopen_frequency(
+    service: AnalyticsServiceDep,
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "How often does a user reopen the same task 3 or more times in a day
+    without completing it?"
+    It returns a CSV file with one row per user and week.
+    """
+    csv_content = service.task_reopen_frequency_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="task_reopen_frequency.csv"'
+        },
+    )
