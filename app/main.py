@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from sqlmodel import text
-from app.routers import users_router, s3_router, tasks_router, projects_router, groups_router, telemetry_router, analytics_router, notifications_router, locations_router
+from app.routers import users_router, s3_router, tasks_router, projects_router, groups_router, telemetry_router, analytics_router, notifications_router, locations_router, smart_router
 from app.core.dependencies.database import DatabaseSession
 from app.core.lifespan import lifespan
 from fastapi.responses import RedirectResponse
@@ -16,6 +16,7 @@ app.include_router(telemetry_router.router)
 app.include_router(analytics_router.router)
 app.include_router(notifications_router.router)
 app.include_router(locations_router.router)
+app.include_router(smart_router.router)
 
 @app.get("/", include_in_schema=False)
 def root() -> RedirectResponse:
