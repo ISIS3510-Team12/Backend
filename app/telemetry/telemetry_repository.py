@@ -1,6 +1,6 @@
 from app.models import ScreenLoadEvent, TaskDetailSession
 from app.repositories import BaseRepository
-
+from app.models import FeatureSession
 
 class TelemetryRepository(BaseRepository):
 
@@ -16,4 +16,10 @@ class TelemetryRepository(BaseRepository):
         self.db.commit()
         self.db.refresh(session)
 
+        return session
+
+    def register_feature_session(self, session: FeatureSession) -> FeatureSession:
+        self.db.add(session)
+        self.db.commit()
+        self.db.refresh(session)
         return session
