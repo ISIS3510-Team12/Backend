@@ -1,18 +1,27 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import Date, case, cast, func, literal, union_all, Integer
+from sqlalchemy import Date, case, cast, exists, func, literal, union_all, Integer
 from sqlmodel import select
 
-from app.core.consts import MIN_TASK_DETAIL_SESSION_SECONDS, TaskEventType, TaskStatus
+from app.core.consts import (
+    MIN_TASK_DETAIL_SESSION_SECONDS,
+    AttachmentKind,
+    TaskEventType,
+    TaskStatus,
+)
 from app.repositories import BaseRepository
 from app.models import (
+    Attachment,
     Group,
     Project,
+    Reminder,
     ScreenLoadEvent,
     Task,
     TaskAssignee,
     TaskDetailSession,
     TaskEvent,
+    TaskRelation,
+    TimeBlock,
 )
 
 
@@ -253,3 +262,54 @@ class AnalyticsRepository(BaseRepository):
             })
 
         return result
+
+    def get_project_feature_usage(self) -> list:
+        """
+        One row per project with its task totals and how many of its tasks use each task-management feature.
+        Feature usage is read from the current state of the tasks, not from interface events.
+        This is for the answer to the Business Question:
+        "Which task-management features are most frequently used in projects with a high number of completed tasks?"
+        """
+        def count_tasks(condition):
+            return func.sum(case((condition, 1), else_=0))
+
+        assignee_count = (
+            select(func.count())
+            .select_from(TaskAssignee)
+            .where(TaskAssignee.task_id == Task.id)
+            .scalar_subquery()
+        )
+
+        statement = (
+            select(
+                Task.project_id.label("project_id"),
+                func.count(Task.id).label("total_tasks"),
+                count_tasks(Task.status == TaskStatus.COMPLETED).label("completed_tasks"),
+                count_tasks(Task.is_priority.is_(True)).label("priority_tasks"),
+                count_tasks(Task.needs_help.is_(True)).label("needs_help_tasks"),
+                count_tasks(
+                    func.length(func.trim(func.coalesce(Task.description, ""))) > 0
+                ).label("description_tasks"),
+                count_tasks(assignee_count > 1).label("shared_assignees_tasks"),
+                count_tasks(
+                    exists().where(TaskRelation.task_id == Task.id)
+                ).label("related_tasks_tasks"),
+                count_tasks(
+                    exists().where(Reminder.task_id == Task.id)
+                ).label("reminders_tasks"),
+                count_tasks(
+                    exists().where(TimeBlock.task_id == Task.id)
+                ).label("time_blocks_tasks"),
+                count_tasks(
+                    exists().where(
+                        Attachment.task_id == Task.id,
+                        Attachment.kind == AttachmentKind.PHOTO,
+                    )
+                ).label("photo_attachment_tasks"),
+            )
+            .where(Task.project_id.is_not(None))
+            .group_by(Task.project_id)
+            .order_by(Task.project_id)
+        )
+
+        return list(self.db.exec(statement).all())

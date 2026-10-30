@@ -149,3 +149,28 @@ def get_task_updates_concentration_periods(
             "Content-Disposition": 'attachment; filename="task_updates_concentration_periods.csv"'
         },
     )
+
+
+@router.get("/most-used-features-in-active-projects", status_code=status.HTTP_200_OK)
+def get_most_used_features_in_active_projects(
+    service: AnalyticsServiceDep,
+    min_completed_tasks: int | None = Query(None, ge=1),
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "Which task-management features are most frequently used in projects with a high number of completed tasks?"
+
+    A project is highly active when it has at least min_completed_tasks completed tasks.
+    By default, that is the 75th percentile of completed tasks among projects with any.
+    Feature usage comes from the current state of the tasks, not from interface events.
+    It returns a CSV file with one row per feature.
+    """
+    csv_content = service.most_used_features_in_active_projects_csv(min_completed_tasks)
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="most_used_features_in_active_projects.csv"'
+        },
+    )
