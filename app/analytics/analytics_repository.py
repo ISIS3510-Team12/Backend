@@ -12,6 +12,7 @@ from app.core.consts import (
 from app.repositories import BaseRepository
 from app.models import (
     Attachment,
+    FeatureSession,
     Group,
     Project,
     Reminder,
@@ -262,6 +263,33 @@ class AnalyticsRepository(BaseRepository):
             })
 
         return result
+
+    def get_features_under_five_seconds(self) -> list:
+        duration_seconds = func.extract(
+            "epoch",
+            FeatureSession.closed_at - FeatureSession.opened_at,
+        )
+
+        statement = (
+            select(
+                FeatureSession.feature.label("feature"),
+                func.count(
+                    FeatureSession.id
+                ).label("session_count"),
+                func.avg(
+                    duration_seconds
+                ).label("average_session_seconds"),
+            )
+            .where(
+                FeatureSession.closed_at
+                > FeatureSession.opened_at
+            )
+            .group_by(FeatureSession.feature)
+            .having(func.avg(duration_seconds) < 5)
+            .order_by(func.avg(duration_seconds))
+        )
+
+        return list(self.db.exec(statement).all())
 
     def get_project_feature_usage(self) -> list:
         """

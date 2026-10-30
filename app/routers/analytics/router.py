@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, status
+﻿from fastapi import APIRouter, Query, status
 from fastapi.responses import Response
 
 from app.core.dependencies.auth import CurrentUser
@@ -129,7 +129,7 @@ def get_task_detail_closed_without_update(
         },
     )
 
-    
+
 @router.get("/task-updates-concentration-periods", status_code=status.HTTP_200_OK)
 def get_task_updates_concentration_periods(
     service: AnalyticsServiceDep,
@@ -147,6 +147,25 @@ def get_task_updates_concentration_periods(
         media_type="text/csv",
         headers={
             "Content-Disposition": 'attachment; filename="task_updates_concentration_periods.csv"'
+        },
+    )
+
+@router.get("/features-under-five-seconds", status_code=status.HTTP_200_OK)
+def get_features_under_five_seconds(service: AnalyticsServiceDep) -> Response:
+    """
+    This is the answer to the Business Question:
+    "Which features have an average session time under 5 seconds?"
+
+    It returns a CSV file with the needed data.
+    """
+    csv_content = service.features_under_five_seconds_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition":
+                'attachment; filename="features_under_five_seconds.csv"'
         },
     )
 

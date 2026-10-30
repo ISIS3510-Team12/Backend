@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 
 from app.core.consts import TaskStatus, TaskEventType
 from sqlmodel import Field, Relationship, SQLModel
@@ -273,6 +273,19 @@ class TaskDetailSession(SQLModel, table=True):
         foreign_key="task.id",
         index=True,
     )
+
+    user_id: str = Field(
+        foreign_key="user.user_id",
+        index=True,
+    )
+
+class FeatureSession(SQLModel, table=True):
+    """A visit to a feature in the application."""
+
+    id: int = Field(primary_key=True, index=True)
+    feature: str = Field(index=True)
+    opened_at: datetime
+    closed_at: datetime
 
     user_id: str = Field(
         foreign_key="user.user_id",

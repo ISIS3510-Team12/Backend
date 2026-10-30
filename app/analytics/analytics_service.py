@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import math
 from datetime import datetime
 from io import StringIO
@@ -131,7 +131,7 @@ class AnalyticsService:
             ])
 
         return buffer.getvalue()
-    
+
     def average_task_completion_time_before_deadline_csv(self) -> str:
         rows = self.repository.get_task_completion_deadlines()
         buffer = StringIO()
@@ -161,10 +161,10 @@ class AnalyticsService:
             seconds_before_deadline = (row.deadline - row.completed_at).total_seconds()
             total_seconds += seconds_before_deadline
             count += 1
-        
+
         average_seconds = total_seconds / count if count > 0 else 0
         writer.writerow([current_user_id, round(average_seconds, 2)])
-        
+
         return buffer.getvalue()
 
     def frecuently_task_types_csv(self) -> str:
@@ -177,7 +177,7 @@ class AnalyticsService:
         ])
         for row in rows:
             writer.writerow([row["task_type"], row["task_count"]])
-        
+
         return buffer.getvalue()
 
     def task_detail_closed_without_update_csv(self) -> str:
@@ -203,7 +203,7 @@ class AnalyticsService:
 
         return buffer.getvalue()
 
-    
+
     def task_updates_concentration_periods_csv(self) -> str:
         rows = self.repository.get_task_updates_concentration_periods()
         buffer = StringIO()
@@ -213,13 +213,35 @@ class AnalyticsService:
             "event_type",
             "task_update_count"
         ])
-        
+
         for row in rows:
             writer.writerow([
                 f"{row['period']:02d}:00",
                 row["event_type"].name if isinstance(row["event_type"], TaskEventType) else str(row["event_type"]),
                 row["task_update_count"],
             ])
+        return buffer.getvalue()
+
+
+    def features_under_five_seconds_csv(self) -> str:
+        rows = self.repository.get_features_under_five_seconds()
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+
+        writer.writerow([
+            "feature",
+            "session_count",
+            "average_session_seconds",
+        ])
+
+        for feature, session_count, average_seconds in rows:
+            writer.writerow([
+                feature,
+                session_count,
+                f"{float(average_seconds):.2f}",
+            ])
+
         return buffer.getvalue()
 
     def most_used_features_in_active_projects_csv(
