@@ -56,3 +56,16 @@ class TaskEventRepository(BaseRepository):
             .order_by(TaskEvent.occurred_at.desc())
         )
         return list(self.db.exec(statement).all())
+    
+    def get_last_task_event_updated_at(self, task_id: int) -> datetime | None:
+        """Occurred_at of the last event for a task."""
+        statement = (
+            select(func.max(TaskEvent.occurred_at))
+            .where(
+                and_(
+                    TaskEvent.task_id == task_id,
+                    TaskEvent.event_type != TaskEventType.VIEWED,
+                )
+            )
+        )
+        return self.db.exec(statement).first()
