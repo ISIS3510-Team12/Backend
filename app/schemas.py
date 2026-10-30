@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field, model_validator
 from app.core.consts import MAX_NOTIFY_WITHIN_METERS, NextTaskReason, TaskStatus
@@ -275,3 +275,31 @@ class UserLocationResponse(BaseModel):
     latitude: float
     longitude: float
     notify_within: int
+
+class FeatureSessionCreate(BaseModel):
+    feature: str
+    opened_at: datetime
+    closed_at: datetime
+
+    @model_validator(mode="after")
+    def validate_session(self):
+        opened_at = self.opened_at
+        closed_at = self.closed_at
+
+        if opened_at.tzinfo is not None:
+            opened_at = opened_at.astimezone(timezone.utc)
+
+        if closed_at.tzinfo is not None:
+            closed_at = closed_at.astimezone(timezone.utc)
+
+        if (opened_at.tzinfo is None) != (closed_at.tzinfo is None):
+            raise ValueError(
+                "opened_at and closed_at must both include a timezone or both omit it"
+            )
+
+        if closed_at <= opened_at:
+            raise ValueError(
+                "closed_at must be after opened_at"
+            )
+
+        return self

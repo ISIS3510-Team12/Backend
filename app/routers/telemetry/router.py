@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 
 from app.core.dependencies.auth import CurrentUser
 from app.core.dependencies.services import TaskServiceDep, TelemetryServiceDep
-from app.schemas import ScreenLoadEventCreate, TaskDetailSessionCreate, TaskDetailSessionResponse
+from app.schemas import FeatureSessionCreate, ScreenLoadEventCreate, TaskDetailSessionCreate, TaskDetailSessionResponse
 
 router = APIRouter(
     prefix="/telemetry",
@@ -39,3 +39,10 @@ def register_task_detail_session(
     service: TelemetryServiceDep,
 ):
     return service.register_task_detail_session(current_user.user_id, data)
+
+@router.post("/feature-session", status_code=status.HTTP_201_CREATED)
+def register_feature_session(data: FeatureSessionCreate, current_user: CurrentUser, service: TelemetryServiceDep):
+    return service.register_feature_session(
+        current_user.user_id,
+        data,
+    )

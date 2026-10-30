@@ -6,6 +6,7 @@ from sqlmodel import select
 from app.core.consts import MIN_TASK_DETAIL_SESSION_SECONDS, TaskEventType, TaskStatus
 from app.repositories import BaseRepository
 from app.models import (
+    FeatureSession,
     Group,
     Project,
     ScreenLoadEvent,
@@ -253,3 +254,30 @@ class AnalyticsRepository(BaseRepository):
             })
 
         return result
+
+    def get_features_under_five_seconds(self) -> list:
+        duration_seconds = func.extract(
+            "epoch",
+            FeatureSession.closed_at - FeatureSession.opened_at,
+        )
+
+        statement = (
+            select(
+                FeatureSession.feature.label("feature"),
+                func.count(
+                    FeatureSession.id
+                ).label("session_count"),
+                func.avg(
+                    duration_seconds
+                ).label("average_session_seconds"),
+            )
+            .where(
+                FeatureSession.closed_at
+                > FeatureSession.opened_at
+            )
+            .group_by(FeatureSession.feature)
+            .having(func.avg(duration_seconds) < 5)
+            .order_by(func.avg(duration_seconds))
+        )
+
+        return list(self.db.exec(statement).all())
