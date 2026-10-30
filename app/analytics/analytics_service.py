@@ -1,9 +1,26 @@
 ﻿import csv
+import math
 from datetime import datetime
 from io import StringIO
 
 from app.analytics.analytics_repository import AnalyticsRepository
-from app.core.consts import SECONDS_PER_DAY, TaskEventType
+from app.core.consts import (
+    HIGH_ACTIVITY_PROJECT_PERCENTILE,
+    SECONDS_PER_DAY,
+    TaskEventType,
+)
+
+# (feature name in the CSV, column of get_project_feature_usage with its task count)
+TASK_FEATURES = [
+    ("priority", "priority_tasks"),
+    ("needs_help", "needs_help_tasks"),
+    ("description", "description_tasks"),
+    ("shared_assignees", "shared_assignees_tasks"),
+    ("related_tasks", "related_tasks_tasks"),
+    ("reminders", "reminders_tasks"),
+    ("time_blocks", "time_blocks_tasks"),
+    ("photo_attachment", "photo_attachment_tasks"),
+]
 
 
 class AnalyticsService:
@@ -226,3 +243,85 @@ class AnalyticsService:
             ])
 
         return buffer.getvalue()
+
+    def most_used_features_in_active_projects_csv(
+        self, min_completed_tasks: int | None = None
+    ) -> str:
+        rows = self.repository.get_project_feature_usage()
+
+        threshold = min_completed_tasks
+        if threshold is None:
+            threshold = self.active_project_threshold(rows)
+
+        active = []
+        other = []
+        for row in rows:
+            if threshold is not None and row.completed_tasks >= threshold:
+                active.append(row)
+            else:
+                other.append(row)
+
+        active_tasks_total = sum(row.total_tasks for row in active)
+        other_tasks_total = sum(row.total_tasks for row in other)
+
+        features = []
+        for feature, column in TASK_FEATURES:
+            active_tasks_using = sum(int(getattr(row, column)) for row in active)
+            other_tasks_using = sum(int(getattr(row, column)) for row in other)
+            active_projects_using = sum(1 for row in active if getattr(row, column) > 0)
+            features.append({
+                "feature": feature,
+                "active_projects_using": active_projects_using,
+                "active_tasks_using": active_tasks_using,
+                "other_tasks_using": other_tasks_using,
+            })
+        features.sort(key=lambda item: item["active_tasks_using"], reverse=True)
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            "feature",
+            "completed_tasks_threshold",
+            "active_projects_using",
+            "active_projects_total",
+            "active_project_usage_pct",
+            "active_tasks_using",
+            "active_tasks_total",
+            "active_task_usage_pct",
+            "other_task_usage_pct",
+        ])
+
+        # Without active projects there is nothing to report.
+        if not active:
+            return buffer.getvalue()
+
+        for item in features:
+            writer.writerow([
+                item["feature"],
+                threshold,
+                item["active_projects_using"],
+                len(active),
+                round(item["active_projects_using"] / len(active), 4),
+                item["active_tasks_using"],
+                active_tasks_total,
+                round(item["active_tasks_using"] / active_tasks_total, 4),
+                round(item["other_tasks_using"] / other_tasks_total, 4) if other_tasks_total else 0,
+            ])
+
+        return buffer.getvalue()
+
+    def active_project_threshold(self, rows: list) -> int | None:
+        """
+        Minimum completed tasks for a project to be highly active: the
+        percentile of completed tasks among projects with at least one.
+        """
+        counts = sorted(row.completed_tasks for row in rows if row.completed_tasks > 0)
+        if not counts:
+            return None
+
+        position = (len(counts) - 1) * HIGH_ACTIVITY_PROJECT_PERCENTILE
+        lower = math.floor(position)
+        upper = math.ceil(position)
+        value = counts[lower] + (counts[upper] - counts[lower]) * (position - lower)
+
+        return math.ceil(value)
