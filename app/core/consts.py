@@ -36,6 +36,12 @@ NEXT_TASK_HORIZON_DAYS = 14
 # Projects at or above this percentile of completed tasks count as highly active.
 HIGH_ACTIVITY_PROJECT_PERCENTILE = 0.75
 
+FEATURE_TIME_BUCKET_SECONDS = 5
+
+FREQUENT_FEATURE_OPEN_PERCENTILE = 0.75
+
+RARE_FEATURE_USAGE_RATIO = 0.25
+
 MAX_NOTIFY_WITHIN_METERS = 1000
 
 # Task detail visits shorter than this are treated as accidental taps.

@@ -5,7 +5,10 @@ from io import StringIO
 
 from app.analytics.analytics_repository import AnalyticsRepository
 from app.core.consts import (
+    FEATURE_TIME_BUCKET_SECONDS,
+    FREQUENT_FEATURE_OPEN_PERCENTILE,
     HIGH_ACTIVITY_PROJECT_PERCENTILE,
+    RARE_FEATURE_USAGE_RATIO,
     SECONDS_PER_DAY,
     TaskEventType,
 )
@@ -243,6 +246,99 @@ class AnalyticsService:
             ])
 
         return buffer.getvalue()
+
+    def feature_abandonment_time_csv(
+        self,
+        bucket_seconds: int = FEATURE_TIME_BUCKET_SECONDS,
+        feature: str | None = None,
+    ) -> str:
+        rows = self.repository.get_feature_session_duration_buckets(bucket_seconds, feature)
+
+        buckets_by_feature: dict[str, dict[int, int]] = {}
+        for feature_name, bucket, session_count in rows:
+            buckets_by_feature.setdefault(feature_name, {})[bucket] = session_count
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+
+        writer.writerow([
+            "feature",
+            "seconds",
+            "sessions_still_active",
+            "percentage_still_active",
+        ])
+
+        for feature_name, buckets in buckets_by_feature.items():
+            total = sum(buckets.values())
+            still_active = total
+
+            for bucket in range(max(buckets) + 2):
+                writer.writerow([
+                    feature_name,
+                    bucket * bucket_seconds,
+                    still_active,
+                    f"{still_active / total * 100:.2f}",
+                ])
+                still_active -= buckets.get(bucket, 0)
+
+        return buffer.getvalue()
+
+    def frequently_opened_rarely_used_csv(
+        self,
+        min_opens: int | None = None,
+        max_completion_ratio: float | None = None,
+    ) -> str:
+        rows = self.repository.get_feature_open_vs_usage()
+
+        if min_opens is None:
+            min_opens = self.frequent_open_threshold(rows)
+        if max_completion_ratio is None:
+            max_completion_ratio = RARE_FEATURE_USAGE_RATIO
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+
+        writer.writerow([
+            "feature",
+            "open_count",
+            "completed_count",
+            "completion_ratio",
+            "flagged",
+        ])
+
+        for feature, open_count, completed_count in rows:
+            completed_count = int(completed_count)
+            completion_ratio = completed_count / open_count
+            flagged = (
+                min_opens is not None
+                and open_count >= min_opens
+                and completion_ratio <= max_completion_ratio
+            )
+            writer.writerow([
+                feature,
+                open_count,
+                completed_count,
+                f"{completion_ratio:.2f}",
+                str(flagged).lower(),
+            ])
+
+        return buffer.getvalue()
+
+    def frequent_open_threshold(self, rows: list) -> int | None:
+        """
+        Minimum opens for a feature to count as frequently opened: the
+        percentile of open counts among all features.
+        """
+        counts = sorted(row.open_count for row in rows)
+        if not counts:
+            return None
+
+        position = (len(counts) - 1) * FREQUENT_FEATURE_OPEN_PERCENTILE
+        lower = math.floor(position)
+        upper = math.ceil(position)
+        value = counts[lower] + (counts[upper] - counts[lower]) * (position - lower)
+
+        return math.ceil(value)
 
     def most_used_features_in_active_projects_csv(
         self, min_completed_tasks: int | None = None

@@ -286,6 +286,7 @@ class FeatureSession(SQLModel, table=True):
     feature: str = Field(index=True)
     opened_at: datetime
     closed_at: datetime
+    completed: bool = Field(default=True)
 
     user_id: str = Field(
         foreign_key="user.user_id",

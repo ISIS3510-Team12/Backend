@@ -1,6 +1,7 @@
 ﻿from fastapi import APIRouter, Query, status
 from fastapi.responses import Response
 
+from app.core.consts import FEATURE_TIME_BUCKET_SECONDS
 from app.core.dependencies.auth import CurrentUser
 from app.core.dependencies.services import AnalyticsServiceDep
 
@@ -166,6 +167,58 @@ def get_features_under_five_seconds(service: AnalyticsServiceDep) -> Response:
         headers={
             "Content-Disposition":
                 'attachment; filename="features_under_five_seconds.csv"'
+        },
+    )
+
+
+@router.get("/feature-abandonment-time", status_code=status.HTTP_200_OK)
+def get_feature_abandonment_time(
+    service: AnalyticsServiceDep,
+    bucket_seconds: int = Query(FEATURE_TIME_BUCKET_SECONDS, ge=1),
+    feature: str | None = Query(None),
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "How long do users spend in a specific feature before abandoning it?"
+
+    Only abandoned sessions count, the ones the user left without using the feature.
+    For each feature, it gives the percentage of those sessions still active as time spent increases.
+    The time axis goes in steps of bucket_seconds. Pass feature to get a single feature.
+    It returns a CSV file with one row per feature and time step.
+    """
+    csv_content = service.feature_abandonment_time_csv(bucket_seconds, feature)
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="feature_abandonment_time.csv"'
+        },
+    )
+
+
+@router.get("/frequently-opened-rarely-used-features", status_code=status.HTTP_200_OK)
+def get_frequently_opened_rarely_used_features(
+    service: AnalyticsServiceDep,
+    min_opens: int | None = Query(None, ge=1),
+    max_completion_ratio: float | None = Query(None, ge=0, le=1),
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "Which features are opened frequently but rarely used afterward?"
+
+    A feature is frequently opened when it has at least min_opens sessions.
+    By default, that is the 75th percentile of opens among all features.
+    It is rarely used when the share of completed sessions is at most max_completion_ratio (default 0.25).
+    It returns a CSV file with one row per feature, with the matching ones flagged.
+    """
+    csv_content = service.frequently_opened_rarely_used_csv(min_opens, max_completion_ratio)
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="frequently_opened_rarely_used_features.csv"'
         },
     )
 

@@ -293,6 +293,53 @@ class AnalyticsRepository(BaseRepository):
 
         return list(self.db.exec(statement).all())
 
+    def get_feature_session_duration_buckets(
+        self, bucket_seconds: int, feature: str | None = None
+    ) -> list:
+        """
+        Per feature, how many abandoned sessions (completed = false) ended in each time bucket of bucket_seconds.
+        """
+        duration_seconds = func.extract(
+            "epoch",
+            FeatureSession.closed_at - FeatureSession.opened_at,
+        )
+        bucket = cast(func.floor(duration_seconds / bucket_seconds), Integer)
+
+        statement = (
+            select(
+                FeatureSession.feature.label("feature"),
+                bucket.label("bucket"),
+                func.count(FeatureSession.id).label("session_count"),
+            )
+            .where(FeatureSession.completed.is_(False))
+            .where(FeatureSession.closed_at > FeatureSession.opened_at)
+            .group_by(FeatureSession.feature, bucket)
+            .order_by(FeatureSession.feature, bucket)
+        )
+
+        if feature is not None:
+            statement = statement.where(FeatureSession.feature == feature)
+
+        return list(self.db.exec(statement).all())
+
+    def get_feature_open_vs_usage(self) -> list:
+        """
+        Per feature, how many times it was opened and how many of those sessions were completed.
+        """
+        statement = (
+            select(
+                FeatureSession.feature.label("feature"),
+                func.count(FeatureSession.id).label("open_count"),
+                func.sum(
+                    case((FeatureSession.completed.is_(True), 1), else_=0)
+                ).label("completed_count"),
+            )
+            .group_by(FeatureSession.feature)
+            .order_by(func.count(FeatureSession.id).desc())
+        )
+
+        return list(self.db.exec(statement).all())
+
     def get_project_feature_usage(self) -> list:
         """
         One row per project with its task totals and how many of its tasks use each task-management feature.
