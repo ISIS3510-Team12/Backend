@@ -118,6 +118,7 @@ class TaskResponse(BaseModel):
     assignees: list[UserResponse] = []
     related_tasks: list[TaskSummary] = []
     reminders: list[ReminderResponse] = []
+    lastChangedAt: datetime | None = None
 
 class TaskTodaySummaryResponse(BaseModel):
     """Summary of pending tasks for today."""

@@ -87,7 +87,7 @@ def to_task_summary(task: Task) -> TaskSummary:
     )
 
 
-def to_task_response(task: Task) -> TaskResponse:
+def to_task_response(task: Task, last_changed_at: datetime) -> TaskResponse:
     assignees: list[UserResponse] = []
     for user in task.assignees:
         assignees.append(to_user_response(user))
@@ -116,6 +116,7 @@ def to_task_response(task: Task) -> TaskResponse:
         assignees=assignees,
         related_tasks=related_tasks,
         reminders=reminders,
+        lastChangedAt=last_changed_at
     )
 
 

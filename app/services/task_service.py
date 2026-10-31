@@ -69,7 +69,7 @@ class TaskService:
         task_status: TaskStatus,
         task_id: int,
         user_id: int,
-    ) -> None:
+    ) -> datetime:
         task_event = TaskEvent(
             event_type=event_type,
             task_status=task_status,
@@ -78,6 +78,7 @@ class TaskService:
             author_id=user_id,
         )
         self.task_event_repository.register_task_event(task_event)
+        return task_event.occurred_at
 
     def validate_assignees(self, user_ids: list[str]) -> None:
         existing_ids = self.user_repository.get_existing_ids(user_ids)
@@ -165,17 +166,18 @@ class TaskService:
         self.apply_relationships(created_task, data)
         self.assign_creator(created_task, user_id)
 
-        self.register_event(
+        last_changed_at = self.register_event(
             TaskEventType.CREATED, created_task.status, created_task.id, user_id
         )
 
-        return to_task_response(created_task)
+        return to_task_response(created_task, last_changed_at=last_changed_at)
 
     def get_tasks_by_user(self, user_id: int) -> list[TaskResponse]:
         tasks = self.repository.get_all_tasks_by_user(user_id)
         responses: list[TaskResponse] = []
         for task in tasks:
-            responses.append(to_task_response(task))
+            last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
+            responses.append(to_task_response(task, last_changed_at=last_changed_at))
         return responses
 
     def get_own_tasks(self, user_id: str, group_id: int) -> list[TaskResponse]:
@@ -183,7 +185,8 @@ class TaskService:
         tasks = self.repository.get_own_tasks_by_group(user_id, group_id)
         responses: list[TaskResponse] = []
         for task in tasks:
-            responses.append(to_task_response(task))
+            last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
+            responses.append(to_task_response(task, last_changed_at=last_changed_at))
         return responses
 
     def get_group_tasks(self, user_id: str, group_id: int) -> list[TaskResponse]:
@@ -191,7 +194,8 @@ class TaskService:
         tasks = self.repository.get_group_tasks_by_group(user_id, group_id)
         responses: list[TaskResponse] = []
         for task in tasks:
-            responses.append(to_task_response(task))
+            last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
+            responses.append(to_task_response(task, last_changed_at=last_changed_at))
         return responses
 
     def get_all_tasks(
@@ -218,7 +222,8 @@ class TaskService:
         )
         responses: list[TaskResponse] = []
         for task in tasks:
-            responses.append(to_task_response(task))
+            last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
+            responses.append(to_task_response(task, last_changed_at=last_changed_at))
         return responses
 
     def earliest(self, tasks: list[Task]) -> Task:
@@ -349,8 +354,8 @@ class TaskService:
 
     def get_task_by_user(self, task_id: int, user_id: int) -> TaskResponse:
         task = self.get_task_or_raise(task_id, user_id)
-        self.register_event(TaskEventType.VIEWED, task.status, task_id, user_id)
-        return to_task_response(task)
+        last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
+        return to_task_response(task, last_changed_at=last_changed_at)
 
     def get_tasks_by_project(self, project_id: int, user_id: int) -> list[TaskResponse]:
         project = self.project_repository.get_project_by_id(project_id, user_id)
@@ -360,7 +365,8 @@ class TaskService:
         tasks = self.repository.get_all_tasks_by_project(project_id)
         responses: list[TaskResponse] = []
         for task in tasks:
-            responses.append(to_task_response(task))
+            last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
+            responses.append(to_task_response(task, last_changed_at=last_changed_at))
         return responses
 
     def get_task_by_project(self, task_id: int, user_id: int, project_id: int) -> TaskResponse:
@@ -370,8 +376,8 @@ class TaskService:
         task = self.repository.get_task_by_project(project_id)
         if task is None:
             raise TaskNotFoundException(task_id)
-        self.register_event(TaskEventType.VIEWED, task.status, task_id, user_id)
-        return to_task_response(task)
+        last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
+        return to_task_response(task, last_changed_at=last_changed_at)
 
     def update_task(self, task_id: int, user_id: int, data: TaskUpdate) -> TaskResponse:
         task = self.get_task_or_raise(task_id, user_id)
@@ -393,11 +399,11 @@ class TaskService:
         self.apply_relationships(updated_task, data)
         self.assign_creator(updated_task, updated_task.user_id)
 
-        self.register_event(
+        last_changed_at = self.register_event(
             TaskEventType.UPDATED, updated_task.status, updated_task.id, user_id
         )
 
-        return to_task_response(updated_task)
+        return to_task_response(updated_task, last_changed_at=last_changed_at)
 
     def change_task_status(self, task_id: int, user_id: int, new_status: TaskStatus) -> TaskResponse:
         new_status = TaskStatus(new_status)
@@ -406,12 +412,15 @@ class TaskService:
 
         updated_task = self.repository.update_task(task, {"status": new_status})
 
+        
         if old_status != new_status:
-            self.register_event(
+            last_changed_at = self.register_event(
                 TaskEventType.STATUS_CHANGED, new_status, updated_task.id, user_id
             )
-
-        return to_task_response(updated_task)
+        else:
+            last_changed_at = self.task_event_repository.get_last_task_event_updated_at(updated_task.id)
+        
+        return to_task_response(updated_task, last_changed_at=last_changed_at)
 
     def delete_task(self, task_id: int, user_id: int) -> None:
         task = self.get_task_or_raise(task_id, user_id)
