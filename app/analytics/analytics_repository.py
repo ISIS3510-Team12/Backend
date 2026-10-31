@@ -23,6 +23,7 @@ from app.models import (
     TaskEvent,
     TaskRelation,
     TimeBlock,
+    User,
 )
 
 
@@ -338,6 +339,34 @@ class AnalyticsRepository(BaseRepository):
             .where(Task.project_id.is_not(None))
             .group_by(Task.project_id)
             .order_by(Task.project_id)
+        )
+
+        return list(self.db.exec(statement).all())
+
+    def get_days_since_last_progress(self) -> list:
+        """
+        One row per user with the time of the last status change the user made,
+        or None if the user never made one.
+        This is the answer to the Business Question:
+        "How many days have passed since the user recorded their progress on their tasks on the app?"
+        """
+        last_progress = (
+            select(
+                TaskEvent.author_id.label("user_id"),
+                func.max(TaskEvent.occurred_at).label("last_progress_at"),
+            )
+            .where(TaskEvent.event_type == TaskEventType.STATUS_CHANGED)
+            .group_by(TaskEvent.author_id)
+            .subquery()
+        )
+
+        statement = (
+            select(
+                User.user_id.label("user_id"),
+                last_progress.c.last_progress_at,
+            )
+            .join(last_progress, last_progress.c.user_id == User.user_id, isouter=True)
+            .order_by(User.user_id)
         )
 
         return list(self.db.exec(statement).all())
