@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import Date, case, cast, exists, func, literal, union_all, Integer
+from sqlalchemy import Date, and_, case, cast, exists, func, literal, union_all, Integer
 from sqlmodel import select
 
 from app.core.consts import (
     MIN_TASK_DETAIL_SESSION_SECONDS,
+    MIN_TASK_REOPENS_PER_DAY,
     AttachmentKind,
     TaskEventType,
     TaskStatus,
@@ -367,6 +368,72 @@ class AnalyticsRepository(BaseRepository):
             )
             .join(last_progress, last_progress.c.user_id == User.user_id, isouter=True)
             .order_by(User.user_id)
+        )
+
+        return list(self.db.exec(statement).all())
+
+
+    def get_task_reopen_frequency(self) -> list:
+        """
+        One row per (user, task, day) where the user opened the task detail at
+        least MIN_TASK_REOPENS_PER_DAY + 1 times and the task had not been
+        completed on or before that day.
+        This is for the answer to the Business Question:
+        "How often does a user reopen the same task 3 or more times in a day
+        without completing it?"
+        """
+        day = cast(func.date_trunc("day", TaskDetailSession.opened_at), Date)
+
+        daily = (
+            select(
+                TaskDetailSession.user_id.label("user_id"),
+                TaskDetailSession.task_id.label("task_id"),
+                day.label("day"),
+                func.count(TaskDetailSession.id).label("opens"),
+                (func.count(TaskDetailSession.id) - 1).label("reopens"),
+            )
+            .where(
+                TaskDetailSession.closed_at - TaskDetailSession.opened_at
+                >= timedelta(seconds=MIN_TASK_DETAIL_SESSION_SECONDS)
+            )
+            .group_by(TaskDetailSession.user_id, TaskDetailSession.task_id, day)
+            .having(
+                func.count(TaskDetailSession.id)
+                >= MIN_TASK_REOPENS_PER_DAY + 1
+            )
+            .subquery()
+        )
+
+        completed = (
+            select(
+                TaskEvent.task_id.label("task_id"),
+                func.min(
+                    cast(func.date_trunc("day", TaskEvent.occurred_at), Date)
+                ).label("completed_day"),
+            )
+            .where(TaskEvent.event_type == TaskEventType.STATUS_CHANGED)
+            .where(TaskEvent.task_status == TaskStatus.COMPLETED)
+            .group_by(TaskEvent.task_id)
+            .subquery()
+        )
+
+        statement = (
+            select(
+                daily.c.user_id,
+                daily.c.task_id,
+                daily.c.day,
+                daily.c.opens,
+                daily.c.reopens,
+            )
+            .outerjoin(
+                completed,
+                and_(
+                    completed.c.task_id == daily.c.task_id,
+                    completed.c.completed_day <= daily.c.day,
+                ),
+            )
+            .where(completed.c.task_id.is_(None))
+            .order_by(daily.c.day, daily.c.user_id, daily.c.task_id)
         )
 
         return list(self.db.exec(statement).all())

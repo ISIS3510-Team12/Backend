@@ -1,6 +1,6 @@
 ﻿import csv
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import StringIO
 
 from app.analytics.analytics_repository import AnalyticsRepository
@@ -349,3 +349,51 @@ class AnalyticsService:
         value = counts[lower] + (counts[upper] - counts[lower]) * (position - lower)
 
         return math.ceil(value)
+
+
+    def task_reopen_frequency_csv(self) -> str:
+        rows = self.repository.get_task_reopen_frequency()
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            "user_id",
+            "week_start",
+            "occurrences",
+            "distinct_tasks",
+            "total_opens",
+            "total_reopens",
+            "avg_reopens_per_occurrence",
+        ])
+
+        buckets: dict[tuple[str, object], dict] = {}
+        for row in rows:
+            week_start = row.day - timedelta(days=row.day.weekday())
+            bucket = buckets.setdefault(
+                (row.user_id, week_start),
+                {
+                    "occurrences": 0,
+                    "tasks": set(),
+                    "opens": 0,
+                    "reopens": 0,
+                },
+            )
+            bucket["occurrences"] += 1
+            bucket["tasks"].add(row.task_id)
+            bucket["opens"] += int(row.opens)
+            bucket["reopens"] += int(row.reopens)
+
+        for (user_id, week_start), bucket in sorted(
+            buckets.items(), key=lambda item: (item[0][1], item[0][0])
+        ):
+            occurrences = bucket["occurrences"]
+            writer.writerow([
+                user_id,
+                week_start.isoformat(),
+                occurrences,
+                len(bucket["tasks"]),
+                bucket["opens"],
+                bucket["reopens"],
+                round(bucket["reopens"] / occurrences, 2),
+            ])
+
+        return buffer.getvalue()
