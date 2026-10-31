@@ -193,3 +193,24 @@ def get_most_used_features_in_active_projects(
             "Content-Disposition": 'attachment; filename="most_used_features_in_active_projects.csv"'
         },
     )
+
+
+@router.get("/days-since-last-progress", status_code=status.HTTP_200_OK)
+def get_days_since_last_progress(
+    service: AnalyticsServiceDep,
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "How many days have passed since the user recorded their progress on their tasks on the app?"
+    It returns a CSV file with one row per user. Users who never changed the
+    status of a task have empty values.
+    """
+    csv_content = service.days_since_last_progress_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="days_since_last_progress.csv"'
+        },
+    )
