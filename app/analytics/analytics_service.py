@@ -310,6 +310,30 @@ class AnalyticsService:
 
         return buffer.getvalue()
 
+    def days_since_last_progress_csv(self) -> str:
+        now = datetime.now()
+        rows = self.repository.get_days_since_last_progress()
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow([
+            "user_id",
+            "last_progress_at",
+            "days_since_last_progress",
+        ])
+
+        for row in rows:
+            if row.last_progress_at is None:
+                writer.writerow([row.user_id, "", ""])
+                continue
+            writer.writerow([
+                row.user_id,
+                row.last_progress_at.isoformat(),
+                (now - row.last_progress_at).days,
+            ])
+
+        return buffer.getvalue()
+
     def active_project_threshold(self, rows: list) -> int | None:
         """
         Minimum completed tasks for a project to be highly active: the
