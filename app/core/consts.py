@@ -50,3 +50,6 @@ MIN_TASK_DETAIL_SESSION_SECONDS = 1
 # Reopening the same task this many times in a day means one initial open plus
 # this many returns to the task detail screen.
 MIN_TASK_REOPENS_PER_DAY = 3
+
+# Screen loads above this are counted as slow for the per-screen business question.
+SLOW_SCREEN_LOAD_THRESHOLD_MS = 3000

@@ -50,6 +50,28 @@ def get_screen_load_time(service: AnalyticsServiceDep) -> Response:
     )
 
 
+@router.get("/screen-loads-over-three-seconds", status_code=status.HTTP_200_OK)
+def get_screen_loads_over_three_seconds(
+    service: AnalyticsServiceDep,
+) -> Response:
+    """
+    This is the answer to the Business Question:
+    "How many loads take longer than three seconds per screen?"
+    It returns a CSV file with one row per screen.
+    """
+    csv_content = service.screen_loads_over_three_seconds_csv()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="screen_loads_over_three_seconds.csv"'
+            )
+        },
+    )
+
+
 @router.get("/upcoming-tasks-due", status_code=status.HTTP_200_OK)
 def get_upcoming_tasks_due(
     service: AnalyticsServiceDep,
