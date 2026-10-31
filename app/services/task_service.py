@@ -376,6 +376,7 @@ class TaskService:
         task = self.repository.get_task_by_project(project_id)
         if task is None:
             raise TaskNotFoundException(task_id)
+        self.register_event(TaskEventType.VIEWED, task.status, task_id, user_id)
         last_changed_at = self.task_event_repository.get_last_task_event_updated_at(task.id)
         return to_task_response(task, last_changed_at=last_changed_at)
 
