@@ -86,6 +86,31 @@ class AnalyticsService:
 
         return buffer.getvalue()
 
+    def screen_loads_over_three_seconds_csv(self) -> str:
+        rows = self.repository.get_screen_loads_over_three_seconds()
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+
+        writer.writerow([
+            "screen",
+            "slow_loads",
+            "total_loads",
+            "slow_load_ratio",
+        ])
+
+        for row in rows:
+            slow_loads = int(row.slow_loads or 0)
+            total_loads = int(row.total_loads or 0)
+            writer.writerow([
+                row.screen,
+                slow_loads,
+                total_loads,
+                round(slow_loads / total_loads, 4) if total_loads else 0,
+            ])
+
+        return buffer.getvalue()
+
     def upcoming_tasks_due_csv(self, days: int) -> str:
         now = datetime.now()
         rows = self.repository.get_upcoming_tasks_due(now, days)

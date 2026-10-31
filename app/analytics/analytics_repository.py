@@ -6,6 +6,7 @@ from sqlmodel import select
 from app.core.consts import (
     MIN_TASK_DETAIL_SESSION_SECONDS,
     MIN_TASK_REOPENS_PER_DAY,
+    SLOW_SCREEN_LOAD_THRESHOLD_MS,
     AttachmentKind,
     TaskEventType,
     TaskStatus,
@@ -81,6 +82,32 @@ class AnalyticsRepository(BaseRepository):
                 func.avg(
                     ScreenLoadEvent.load_time_ms
                 ).label("average_load_time_ms"),
+            )
+            .group_by(ScreenLoadEvent.screen)
+            .order_by(ScreenLoadEvent.screen)
+        )
+
+        return list(self.db.exec(statement).all())
+
+    def get_screen_loads_over_three_seconds(self) -> list:
+        """
+        One row per screen with the number of loads longer than three seconds
+        and the total number of loads.
+        This is for the answer to the Business Question:
+        "How many loads take longer than three seconds per screen?"
+        """
+        slow = func.sum(
+            case(
+                (ScreenLoadEvent.load_time_ms > SLOW_SCREEN_LOAD_THRESHOLD_MS, 1),
+                else_=0,
+            )
+        )
+
+        statement = (
+            select(
+                ScreenLoadEvent.screen.label("screen"),
+                slow.label("slow_loads"),
+                func.count(ScreenLoadEvent.id).label("total_loads"),
             )
             .group_by(ScreenLoadEvent.screen)
             .order_by(ScreenLoadEvent.screen)
