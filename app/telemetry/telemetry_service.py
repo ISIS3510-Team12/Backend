@@ -57,3 +57,24 @@ class TelemetryService:
             user_id=user_id,
         )
         return self.repository.register_feature_session(session)
+
+
+    def register_abandoned_feature_session(self, user_id: str, data: FeatureSessionCreate) -> FeatureSession:
+        """Same as register_feature_session, but the user left the feature without using it."""
+        opened_at = data.opened_at
+        closed_at = data.closed_at
+
+        if opened_at.tzinfo is not None:
+            opened_at = opened_at.astimezone(timezone.utc).replace(tzinfo=None)
+
+        if closed_at.tzinfo is not None:
+            closed_at = closed_at.astimezone(timezone.utc).replace(tzinfo=None)
+
+        session = FeatureSession(
+            feature=data.feature,
+            opened_at=opened_at,
+            closed_at=closed_at,
+            completed=False,
+            user_id=user_id,
+        )
+        return self.repository.register_feature_session(session)

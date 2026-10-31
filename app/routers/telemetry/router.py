@@ -46,3 +46,12 @@ def register_feature_session(data: FeatureSessionCreate, current_user: CurrentUs
         current_user.user_id,
         data,
     )
+
+
+@router.post("/feature-session/abandoned", status_code=status.HTTP_201_CREATED)
+def register_abandoned_feature_session(data: FeatureSessionCreate, current_user: CurrentUser, service: TelemetryServiceDep):
+    """Registers a visit to a feature that the user left without using it."""
+    return service.register_abandoned_feature_session(
+        current_user.user_id,
+        data,
+    )
