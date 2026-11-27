@@ -1,9 +1,10 @@
 from datetime import datetime
 
 from app.core.consts import AttachmentKind
-from app.models import Group, Project, Reminder, Task, TimeBlock, User
+from app.models import Group, Project, ProjectPhoto, Reminder, Task, TimeBlock, User
 from app.schemas import (
     GroupResponse,
+    ProjectPhotoResponse,
     ProjectResponse,
     ReminderResponse,
     TaskResponse,
@@ -149,4 +150,14 @@ def to_project_response(project: Project) -> ProjectResponse:
         description=project.description,
         deadline=project.deadline,
         group_id=project.group_id,
+    )
+
+def to_project_photo_response(photo: ProjectPhoto, uploader: User) -> ProjectPhotoResponse:
+    return ProjectPhotoResponse(
+        id=photo.id,
+        project_id=photo.project_id,
+        caption=photo.caption,
+        uploader_id=photo.uploader_id,
+        uploader_name=f"{uploader.first_name} {uploader.last_name}".strip(),
+        created_at=photo.created_at,
     )

@@ -119,3 +119,13 @@ class UserLocationNotFoundException(BaseHTTPException):
     def __init__(self, user_id: str):
         message = f"User with ID {user_id} has no saved location."
         super().__init__(status_code=404, message=message)
+
+class ProjectPhotoNotFoundException(BaseHTTPException):
+    def __init__(self, photo_id: int):
+        message = f"Photo with ID {photo_id} not found."
+        super().__init__(status_code=404, message=message)
+
+class ProjectPhotoDeleteForbiddenException(BaseHTTPException):
+    def __init__(self):
+        message = "Only the person who uploaded the photo can delete it."
+        super().__init__(status_code=403, message=message)

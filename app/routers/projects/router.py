@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Response, status
 
 from app.core.dependencies.auth import CurrentUser
-from app.core.dependencies.services import ProjectInsightsServiceDep, ProjectServiceDep
+from app.core.dependencies.services import (
+    ProjectInsightsServiceDep,
+    ProjectPhotoServiceDep,
+    ProjectServiceDep,
+)
 from app.exceptions import ProjectNotFoundException
 from app.schemas import (
     DeadlinePredictionResponse,
@@ -71,11 +75,18 @@ def get_project_by_user(project_id: int, current_user: CurrentUser, service: Pro
     )
     
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_project(project_id: int, current_user: CurrentUser, service: ProjectServiceDep):
+def delete_project(
+    project_id: int,
+    current_user: CurrentUser,
+    service: ProjectServiceDep,
+    photo_service: ProjectPhotoServiceDep,
+):
+    objects = photo_service.get_stored_objects_of_project(project_id)
     service.delete_project(
         project_id,
         current_user.user_id
     )
+    photo_service.remove_stored_objects(objects)
     return Response(
         status_code=status.HTTP_204_NO_CONTENT
     )
