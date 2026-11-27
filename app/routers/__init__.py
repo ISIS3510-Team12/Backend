@@ -8,3 +8,4 @@ from .analytics import router as analytics_router
 from .notifications import router as notifications_router
 from .locations import router as locations_router
 from .smart import router as smart_router
+from .project_photos import router as project_photos_router

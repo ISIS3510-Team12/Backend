@@ -1,7 +1,7 @@
 ﻿from datetime import datetime
 
 from app.core.consts import TaskStatus, TaskEventType
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 class UserGroup(SQLModel, table=True):
     user_id: str = Field(foreign_key="user.user_id", primary_key=True)
@@ -220,6 +220,31 @@ class Attachment(SQLModel, table=True):
     task: Task = Relationship(
         back_populates="attachments",
     )
+
+class ProjectPhoto(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("project_id", "uploader_id", "client_upload_id"),
+    )
+
+    id: int = Field(primary_key=True, index=True)
+
+    project_id: int = Field(
+        foreign_key="project.id",
+        index=True,
+        ondelete="CASCADE",
+    )
+
+    uploader_id: str = Field(
+        foreign_key="user.user_id",
+        index=True,
+    )
+
+    client_upload_id: str
+    caption: str | None = None
+    bucket: str
+    key: str
+    thumbnail_key: str | None = None
+    created_at: datetime
 
 class TaskEvent(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)

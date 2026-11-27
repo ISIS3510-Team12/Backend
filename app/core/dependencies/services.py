@@ -9,6 +9,7 @@ from app.core.dependencies.repositories import (
     AnalyticsRepositoryDep,
     TelemetryRepositoryDep,
     LocationRepositoryDep,
+    ProjectPhotoRepositoryDep,
 )
 from app.services.notification_service import NotificationService
 from app.services.location_service import LocationService
@@ -17,6 +18,7 @@ from app.services.task_service import TaskService
 from app.services.project_insights import ProjectInsightsService
 from app.services.group_service import GroupService
 from app.services.project_service import ProjectService
+from app.services.project_photo_service import ProjectPhotoService
 from app.analytics.analytics_service import AnalyticsService
 from app.core.dependencies.external import S3ClientDep
 from app.telemetry.telemetry_service import TelemetryService
@@ -109,4 +111,17 @@ def get_location_service(repo: LocationRepositoryDep) -> LocationService:
 LocationServiceDep = Annotated[
     LocationService,
     Depends(get_location_service),
+]
+
+
+def get_project_photo_service(
+    repo: ProjectPhotoRepositoryDep,
+    project_repo: ProjectRepositoryDep,
+    s3_client: S3ClientDep,
+) -> ProjectPhotoService:
+    return ProjectPhotoService(repo, project_repo, s3_client)
+
+ProjectPhotoServiceDep = Annotated[
+    ProjectPhotoService,
+    Depends(get_project_photo_service),
 ]

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Response, status
 from app.core.dependencies.auth import CurrentUser
-from app.core.dependencies.services import GroupServiceDep
+from app.core.dependencies.services import GroupServiceDep, ProjectPhotoServiceDep
 from app.schemas import GroupCreate, GroupMemberAdd, GroupResponse, GroupUpdate
 
 router = APIRouter(
@@ -29,9 +29,16 @@ def update_group(group_id: int, data: GroupUpdate, current_user: CurrentUser, se
 
 
 @router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_group(group_id: int, current_user: CurrentUser, service: GroupServiceDep):
+def delete_group(
+    group_id: int,
+    current_user: CurrentUser,
+    service: GroupServiceDep,
+    photo_service: ProjectPhotoServiceDep,
+):
+    objects = photo_service.get_stored_objects_of_group(group_id)
     service.delete_group(group_id, current_user.user_id)
-    
+    photo_service.remove_stored_objects(objects)
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

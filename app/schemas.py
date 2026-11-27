@@ -304,3 +304,11 @@ class FeatureSessionCreate(BaseModel):
             )
 
         return self
+
+class ProjectPhotoResponse(BaseModel):
+    id: int
+    project_id: int
+    caption: str | None = None
+    uploader_id: str
+    uploader_name: str
+    created_at: datetime

@@ -7,6 +7,7 @@ from app.repositories.task_event_repository import TaskEventRepository
 from app.repositories.group_repository import GroupRepository
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.location_repository import LocationRepository
+from app.repositories.project_photo_repository import ProjectPhotoRepository
 from app.analytics.analytics_repository import AnalyticsRepository
 from app.repositories.task_event_repository import TaskEventRepository
 from app.telemetry.telemetry_repository import TelemetryRepository
@@ -83,4 +84,12 @@ def get_location_repository(db: DatabaseSession) -> LocationRepository:
 LocationRepositoryDep = Annotated[
     LocationRepository,
     Depends(get_location_repository),
+]
+
+def get_project_photo_repository(db: DatabaseSession) -> ProjectPhotoRepository:
+    return ProjectPhotoRepository(db)
+
+ProjectPhotoRepositoryDep = Annotated[
+    ProjectPhotoRepository,
+    Depends(get_project_photo_repository),
 ]

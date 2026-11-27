@@ -28,6 +28,11 @@ ALLOWED_PHOTO_CONTENT_TYPES = frozenset(
     {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 )
 
+MAX_THUMBNAIL_SIZE_BYTES = 1024 * 1024
+MAX_PHOTO_CAPTION_LENGTH = 200
+MAX_CLIENT_UPLOAD_ID_LENGTH = 64
+PHOTO_CACHE_MAX_AGE_SECONDS = 604800
+
 SECONDS_PER_DAY = 86400
 
 # How far ahead the Next Task recommendation looks. Overdue tasks are included.
